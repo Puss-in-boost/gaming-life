@@ -1,37 +1,41 @@
-# Gaming Life V1.5：本地优先 + Supabase 数据同步
+# Gaming Life V1.6：手机云端优先 / 电脑本地优先
 
-## 与 You-jile 的关系
+## 后端保持不变
 
-- 同样使用 GitHub 托管及部署、**Supabase Auth + PostgreSQL + Row Level Security (RLS)**。
-- Gaming Life 继续在 **GitHub Pages 静态部署**：不必为了云存储迁移到 Next.js 或 Vercel。
-- **不复用 You-jile 的交易表、密码或数据库项目**。创建新 Supabase 项目；跨设备登录同一个 Gaming Life 账号。
-- 与 You-jile 不同：采用 IndexedDB 本地优先，断网仍可写入；同步在网络可用时自动尝试，发生分歧时要求用户决定，而非静默覆盖。
+继续使用原 V1.5 独立 Supabase 项目（Supabase Auth + PostgreSQL + RLS）和现有 `public.gaming_life_states` 表、`gaming_life_put_state` RPC。**不需要重建数据库、清理存档或重跑 SQL**。
 
-## 一次性开通（需由 Supabase 控制台管理员操作）
+网站地址：<https://puss-in-boost.github.io/gaming-life/>。登录使用相同项目 URL、**publishable / anon** key 和同一个账号；不要填写 `sb_secret_`、`service_role` 或数据库密码。GitHub Pages 提供静态页面，Supabase 提供账号与云端存档。
 
-1. 在 [Supabase 控制台](https://supabase.com/dashboard) 新建独立项目 `gaming-life`。**如果当前免费项目名额不够，可以先将已用项目升级或选择其他组织，不要改动 You-jile 正式库。**
-2. 在新项目的 **SQL Editor** 完整运行 [`supabase/001_gaming_life_states.sql`](../supabase/001_gaming_life_states.sql)。脚本可重复执行，不删除历史存档。
-3. Project Settings → API Keys，复制 **Project URL** 以及 **publishable** 或 `anon` key。不要使用 `service_role`、`sb_secret_`、数据库连接字符串。
-4. Authentication → URL Configuration：Site URL 设置为 `https://puss-in-boost.github.io/gaming-life/`。Redirect URLs 加入该地址。配置邮箱确认邮件（首次注册可能需要先确认邮件）。
-5. 打开 Gaming Life → 设置 → 云端同步，填写 Project URL 和公开 key，使用邮箱注册、确认邮箱、登录。
-6. **首次登录不会强制覆盖本地记录**：如果云端是空的，确认上传当前设备存档；如果有云端数据，先备份，再选择使用本地或云端。第二台设备重复填写相同公开项目配置并登录同一个账号。
+## 每个设备的选择
 
-## 本地备份与冲突处理
+| 模式 | 完整存档持久化位置 | 断网编辑 | 首次使用 |
+| --- | --- | --- | --- |
+| 电脑默认：本地优先 | IndexedDB + localStorage 兼容镜像 + Supabase | 可以，本地写入后等联网同步 | 继续沿用 V1.5 存档 |
+| 全新手机默认：云端优先 | **仅 Supabase**；当前页面内存临时持有完整状态 | **不可以** | 配置项目和登录后自动读取云端 |
+| 旧手机：保留本地优先 | 原有 IndexedDB / localStorage + Supabase | 可以 | **不会自动清除旧进度**；需手动切换 |
 
-- 所有新增、完成、撤销、金币兑换、任务包导入等操作先写入浏览器 `IndexedDB`；现有 `gaming-life-v1-local` localStorage 继续作为兼容镜像。
-- 浏览器现存的 V1–V1.4 数据会在首次进入此版本时复制到 IndexedDB；**不会自动删除 localStorage 旧记录**。
-- 登录凭证与 Supabase 公钥配置存在 IndexedDB，GitHub 仓库不包含任何私人存档、密码或秘钥。
-- 自动同步：本机完成操作约 1.7 秒后尝试上传；再次打开/联网/回到标签页时检查云端。离线变更不丢弃，重新联网后继续尝试。
-- 使用一个用户一行 JSONB 存档，数据库用 `revision` 实现原子比较交换（CAS）。本地与云端都修改过时弹出冲突处理：可以备份后采用本地或云端。**当前不支持自动合并两个设备的任务事件。**
-- 采用云端时，自动下载本机完整 JSON 备份；采用本机时自动下载原云端 JSON 备份（原云端也临时复制到本机 IndexedDB）。请勿把 JSON 备份上传公开 GitHub。
-- 仍建议定期用「设置 → 导出 JSON 备份」制作外部备份。IndexedDB、localStorage 和浏览器缓存都不是跨硬盘的可靠备份。
-- 升级代码后首次使用建议导出 JSON 备份；不同浏览器的本地数据不天然相同。
+手机云端优先只把 `storage_mode`、公开项目配置、登录会话和 `{userId, revision}` 元数据存入 IndexedDB；`remote_base.last`、`state`、`state_stamp` 及 `backup_*` 快照不会留下，`localStorage` 的完整状态及时间戳镜像会清理。完整的游戏存档在界面显示期间留于 **JavaScript 内存**，标签页关闭即释放。只会在用户明确点击「导出 JSON」时下载本地备份文件，不自动下载。
 
-## 限制
+## 从 V1.5 的旧手机切换
 
-- **云端需要你亲自创建 Supabase 项目、执行 SQL、设置 Auth，并填入 URL/公开 key 才能工作；仅合并 PR 不会自动开通云端。**
-- 未配置 Supabase 时应用保持完整的本地模式。
-- 目前无实时 WebSocket（依赖联网、页面聚焦及编辑后定时同步）；不是秒级实时多人协作。
-- 有冲突时不会自动合并，选择版本将替换当前活动存档，切换前请保存下载的备份。
-- 若 IndexedDB 不可用，应用会显示降级警告；不要在私人浏览模式下依赖长期保存。
-- 云端数据存储在所用 Supabase 项目中，个人内容受 RLS 与该项目安全配置控制；用户自行决定是否启用云端。
+1. 先在电脑上确认「已云端同步」，并在必要时导出完整 JSON 备份。
+2. 在手机的「设置 → 云端同步」登录同一账号。如果出现「双端存档需要你决定」，**不要选择「采用本地」**。
+3. 选择「☁️ 直接使用云端 · 不下载到本地」或「在此设备启用云端优先」，阅读并确认本设备上旧完整本地存档会被删除。
+4. 切换后确认「已云端同步」、角色等级、任务、XP 和金币与电脑一致。手机上可查看 IndexedDB：不应存在 `state`、`state_stamp` 或旧 `backup_*`；`remote_base` 不能包含 `last` 快照。
+
+**重要：** 若手机本地已有未同步的独有进展，请先手动导出备份或通过本地优先模式正常同步。选择云端优先将显式丢弃本机旧完整存档，不能自动合并任务历史；不同设备若都修改了同一份记录，以 RPC 修订号 CAS 阻止静默覆盖。
+
+## 操作和故障
+
+- **云端优先必须联网**：登录后才显示有效记录。网络断开、正在提交或同步冲突时阻止继续编辑；网页会给出状态提示。
+- **保存失败**：本次进度可能仅在当前网页内存中，关闭/刷新将丢失；保持页面打开，联网后点击「立即检查同步」，或者**手动**「导出 JSON 备份」。存在未同步更改时，网页会在离开时尝试警告，但部分手机浏览器可能不会显示警告。
+- **另一设备也编辑了**：进入冲突提示，不自动合并。可手动导出当前页面的数据，再确认「放弃本次未同步改动，读取最新云端」。
+- **切回本地优先**：在设置中点击「切回本地优先（允许离线）」并确认；完整云端游戏存档才会重新写入 IndexedDB 和 localStorage。
+- **退出账号**：云端模式中有未同步改动时禁止直接退出；已同步后退出会隐藏本设备的云端数据，重新登录恢复。公开项目配置和会话仅留在本设备 IndexedDB。
+- **账号登录失败或云端没有存档**：不会用新设备的默认任务覆盖云端。先在已有电脑登录并上传云端，再到手机登录读取。
+
+## 数据安全与限制
+
+V1.6 仍在浏览器端访问 Supabase，靠登录会话和 Row Level Security 隔离用户，SQL 中的乐观版本校验阻止双端无意覆盖。本版本无需 Vercel；未支持实时多人协作或自动合并。云端优先不承诺完全不在内存里出现数据，也不能控制操作系统的内存分页、浏览器内部诊断缓存；承诺是**应用代码不将完整游戏状态持久写入手机 IndexedDB 或 localStorage**。
+
+真实部署验收必须使用自己的 Supabase 项目、账号和两台设备；离线、失效会话、并发冲突和刷新验证均应完成。发布前建议电脑导出一份完整 JSON 备份。
