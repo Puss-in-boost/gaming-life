@@ -1,0 +1,11 @@
+{
+  "name": "Gaming Life · 游戏人生",
+  "short_name": "游戏人生",
+  "description": "主线、支线、角色成长与人生章节",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0d1120",
+  "theme_color": "#101527",
+  "lang": "zh-CN"
+}
