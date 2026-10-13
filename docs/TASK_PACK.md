@@ -1,65 +1,36 @@
-# ChatGPT ↔ Gaming Life 任务包协议（V1.1）
+# ChatGPT ↔ Gaming Life 任务包协议（V1.3）
 
-## 从 ChatGPT 接收新任务
+任务包仍使用 `gaming-life.quest-pack` 的 `version:1` 格式；V1.3 增加可选 `coins` 字段，旧 V1.1 包仍能导入。
 
-对 ChatGPT 说「请根据我最新的目标和我的 Gaming Life 当前状态生成一个 V1.1 任务包」，将生成的 JSON **原样复制**到 Gaming Life 的「导入任务包」窗口。应用会先展示预览，只有用户确认后才保存。
-
-任务包示例：
+## 示例
 
 ```json
 {
   "format": "gaming-life.quest-pack",
   "version": 1,
-  "packId": "autumn-2026-week-42",
-  "title": "本周：逐步推进重要目标",
-  "focusId": "priority-step",
+  "packId": "graduation-2026-week-42",
+  "title": "毕业试炼：本周计划",
+  "focusId": "thesis-next",
   "quests": [
-    {
-      "id": "priority-step",
-      "title": "完成一个重要目标的明确交付",
-      "detail": "保存并记下可以验证的成果",
-      "kind": "main",
-      "area": "career",
-      "repeat": "once",
-      "xp": 50
-    },
-    {
-      "id": "read-something",
-      "title": "学习一个感兴趣的新概念",
-      "detail": "能用自己的话解释即可",
-      "kind": "side",
-      "area": "learning",
-      "repeat": "daily",
-      "xp": 15
-    }
+    {"id":"thesis-next","title":"推进一项论文或送审具体成果","detail":"完成真实改动并留下结果，按当前送审阶段调整","kind":"main","area":"career","repeat":"daily","xp":50,"coins":25},
+    {"id":"workout","title":"按原计划完成训练或恢复","detail":"不要为了金币过度训练","kind":"side","area":"health","repeat":"daily","xp":20,"coins":10},
+    {"id":"learn","title":"讲清楚一个感兴趣的概念","detail":"本周选择一次进行即可","kind":"side","area":"learning","repeat":"weekly","xp":20,"coins":10}
   ]
 }
 ```
 
-- `format` 必须是 `gaming-life.quest-pack`；`version` 必须是 `1`。
-- `packId` 使用 3–60 位英文字母、数字、`-` 或 `_`，同一个任务包的更新应**保留 packId**。
-- 每个 `quests[].id` 在同一包内唯一，需为英文字母、数字、`-` 或 `_`，长度 1–60；修改同一任务时保留 id。
-- `title` 不超过65字；`detail` 不超过250字；`xp` 为 5–80 的整数。
-- `kind` 只能是 `main`（主线）或 `side`（支线）。
-- `area` 可选 `career` / `learning` / `finance` / `social` / `health` / `explore`。
-- `repeat` 可选 `once` / `daily` / `weekly`。
-- `focusId` 可选，填写本包内 `main` 任务的 id，用于选择当前主线。
-- 一包最多30个任务。强烈建议一次只创建1个主线和1–2个支线。
+规则：`packId` 3–60 位英文字母、数字、`-`、`_`；同一包和同一项任务使用稳定 id 才能幂等更新。每项标题最多65字、说明最多250字、`xp` 5–80 整数；可选 `coins` 0–80 整数，不填时按任务类型与 XP 推算，仍受每日/每周金币上限约束。`kind` 仅为 `main` / `side`；`area` 仅为 `career` / `learning` / `finance` / `social` / `health` / `explore`；`repeat` 为 `once` / `daily` / `weekly`；`focusId` 可指向当前包的一个主线任务；每包1–30项。
 
-导入不允许指定历史完成状态，不会发放 XP。再次导入同一个 `packId` + `id` 只更新对应任务，不重复增加。旧完成事件依然保留，历史经验分数使用完成时的值。旧任务不会因为新任务包而被自动删除。
+网页内置「✨ 领取本期推荐任务」，不必每天复制 JSON。外部 ChatGPT 任务包依然通过「导入任务包 → 预览 → 确认」进行。再次导入 `packId + quest.id` 相同的任务只更新配置，不删除历史事件或补发金币。
 
-## 把状态反馈给 ChatGPT
+## 状态快照与隐私
 
-首页点击「复制当前状态」，将 JSON 直接粘贴到 ChatGPT。它包含：当前角色等级与 XP、当前主线、当天支线、已启用任务、近7天最多40项完成记录、阶段里程碑状态。默认**不导出**日常随手日志、个人财务和其他隐私内容。
+首页「复制当前状态」让用户主动复制 XP、已完成事项、币余额、预算剩余和任务摘要给 ChatGPT。不会自动上传个人记录或后台调用 AI API。
 
-复制动作完全由用户触发；当前无登录、后台 AI 调用、Supabase 同步。无法复制时会下载状态 JSON 文件。
+## ChatGPT 的任务规划原则
 
-## 生成任务包的建议
-
-请 ChatGPT 做到：
-
-1. 先识别当前最重要目标和真实约束，而不是自动把生活变成 KPI。
-2. 优先一个明确主线，最多两个可选支线；完成标准必须能核实。
-3. 按难度分配经验：短任务10–20、深度任务30–50，特殊困难任务可达80。
-4. 非工作活动也可以获得 XP，但不要鼓励过度训练、牺牲睡眠或将休息视为失败。
-5. 根据用户发回的 `gaming-life.state-snapshot` 调整现有任务时保留原来的 `packId` / `id`，避免重复导入。
+- **以最新真实状态为准。** 不因过去曾经修改论文，就假定某章节现在仍未完成。
+- 优先一个重要主线和最多两个可选支线；具体成果优先于小时数。
+- 体魄训练按照既定安排，膝盖不适优先恢复；睡眠与社交不搞惩罚式 KPI。
+- 计划调整时尽量沿用原包的 `packId` / `quest.id`；XP / 币独立、明确且不过度发放。
+- 不以正常吃饭、普通娱乐、睡眠或休息作为必须用币购买的权利。
