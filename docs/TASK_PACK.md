@@ -1,4 +1,4 @@
-# ChatGPT ↔ Gaming Life 任务包协议（V1.3）
+# ChatGPT ↔ Gaming Life 任务包协议（V1.4）
 
 任务包仍使用 `gaming-life.quest-pack` 的 `version:1` 格式；V1.3 增加可选 `coins` 字段，旧 V1.1 包仍能导入。
 
@@ -34,3 +34,13 @@
 - 体魄训练按照既定安排，膝盖不适优先恢复；睡眠与社交不搞惩罚式 KPI。
 - 计划调整时尽量沿用原包的 `packId` / `quest.id`；XP / 币独立、明确且不过度发放。
 - 不以正常吃饭、普通娱乐、睡眠或休息作为必须用币购买的权利。
+
+## V1.4 进度状态与并行主线
+
+V1.4 未改变原有 `gaming-life.quest-pack` `version:1` 的 JSON 格式。任务包**不能直接指定完成状态**，避免 ChatGPT 输出任务包时自动替玩家领取 XP。
+
+网页中新加入了「进行中」「待确认」状态与进度笔记，用户主动记录，不提前发放奖励。复制给 ChatGPT 的 `gaming-life.state-snapshot` 包含 `currentMain.status`、`currentMain.progressNote`、`secondaryMain` 和最多12条 `recentProgress`。笔记由玩家自行决定是否复制/发送。
+
+内置求职任务包使用固定 `packId: career-applications-202610`、`focusId: first-three-applications`，含简历核对、八个目标岗位、首批三份真实投递、后续每周五份投递。先预览确认；重复导入幂等，不视为已投递。
+
+具体规则见 [`PROGRESS.md`](PROGRESS.md)。
