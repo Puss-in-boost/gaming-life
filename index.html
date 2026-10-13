@@ -190,8 +190,9 @@ function levelInfo(total){let level=1,left=total,need=100;while(left>=need&&leve
 const dailyEvents=()=>state.events.filter(e=>e.date===today());
 function save(suppressSync=false){
  let mirrorSaved=true;
- try{localStorage.setItem(KEY,JSON.stringify(state));localStorage.setItem(KEY+'_stamp',String(Date.now()))}catch(e){mirrorSaved=false}
- if(window.GamingLifeCloud)window.GamingLifeCloud.persist(state,suppressSync);
+ let stamp=Date.now();
+ try{stamp=Math.max(stamp,Number(localStorage.getItem(KEY+'_stamp')||0)+1);localStorage.setItem(KEY,JSON.stringify(state));localStorage.setItem(KEY+'_stamp',String(stamp))}catch(e){mirrorSaved=false}
+ if(window.GamingLifeCloud)window.GamingLifeCloud.persist(state,suppressSync,stamp);
  if(!mirrorSaved&&!window.GamingLifeCloud?.hasDB()){notify('无法存入浏览器，本次记录可能无法保存');return false}
  return true;
 }
