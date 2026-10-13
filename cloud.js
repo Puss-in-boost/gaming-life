@@ -9,7 +9,7 @@
   let db = null, isPersistent = false, configured = null, session = null;
   let info = {phase:'initializing', message:'正在读取本地存档', pending:null, userEmail:null, revision:null, persistent:false};
   let base = null, currentUser = null, onReplace = null, onUpdate = () => {}, getState = () => null;
-  let remoteChoice = null, serial = Promise.resolve(), syncTimer = null, syncing = false;
+  let remoteChoice = null, serial = Promise.resolve(), syncTimer = null, syncing = false, dirtyWhileSync = false;
   function note(phase, message, pending = null) {
     info = {...info,phase,message,pending,userEmail:session?.user?.email||null,persistent:isPersistent};
     onUpdate({...info});
@@ -54,12 +54,12 @@
     }catch(e){db=null;isPersistent=false;note('fallback','IndexedDB 不可用，仅能临时使用旧版 localStorage：'+e.message)}
     return initial;
   }
-  function persist(next,suppressSync=false){
+  function persist(next,suppressSync=false,externalStamp=null){
     if(!db)return Promise.resolve(false);
     const copy=JSON.parse(JSON.stringify(next));
-    const stamp=Date.now();
+    const stamp=externalStamp||Date.now();
     // Queue both writes to keep the state and its version ordered.
-    return write('state',copy).then(()=>write('state_stamp',stamp)).then(()=>{if(!suppressSync&&session?.access_token&&info.pending===null)schedule();return true}).catch(e=>{note('error','本地保存失败：'+e.message);return false});
+    return write('state',copy).then(()=>write('state_stamp',stamp)).then(()=>{if(!suppressSync&&session?.access_token&&info.pending===null){if(syncing)dirtyWhileSync=true;schedule()}return true}).catch(e=>{note('error','本地保存失败：'+e.message);return false});
   }
   function status(){return {...info,configured:!!configured?.url,configUrl:configured?.url||'',signedIn:!!session?.access_token,remoteRevision:base?.revision??null}}
   function credentials(email,password){
@@ -134,7 +134,7 @@
     try{
       const user=await fetchUser();
       const id=user.id;session.user=user;await write('session',session);
-      const remote=await fetchRemote(id),local=getState();
+      const remote=await fetchRemote(id),local=JSON.parse(JSON.stringify(getState()));
       if(!remote){
         currentUser=id;remoteChoice={kind:'upload',userId:id,remote:null};note('decision','云端暂无存档。请确认是否上传当前本地进度','upload');return;
       }
@@ -154,7 +154,7 @@
         else {remoteChoice={kind:'choose',userId:id,remote:await fetchRemote(id)};note('conflict','其他设备刚更新了云端，需手动处理冲突','choose')}
       }else if(same(local,remote.payload)){await markSynced(id,remote.revision,local)}
       else {remoteChoice={kind:'choose',userId:id,remote};note('conflict','本地与云端都有新进展，未自动覆盖任何记录','choose')}
-    }catch(e){note('offline','云端连接失败；本地记录保留：'+e.message)}finally{syncing=false}
+    }catch(e){note('offline','云端连接失败；本地记录保留：'+e.message)}finally{syncing=false;if(dirtyWhileSync){dirtyWhileSync=false;if(session?.access_token&&!remoteChoice&&navigator.onLine)schedule()}}
   }
   async function choose(where){
     if(!remoteChoice||!session?.access_token)throw new Error('当前没有待处理的同步决定');
