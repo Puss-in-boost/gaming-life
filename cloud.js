@@ -229,13 +229,13 @@
     return status();
   }
   async function enterLocalMode(){
-    if(!db||mode!=='cloud'||!hasCloudData)throw new Error('请先从云端读取有效游戏存档');
+    if(!db||mode!=='cloud')throw new Error('当前无需切换本地模式');
     const snapshot=JSON.parse(JSON.stringify(getState()));
     await write('storage_mode','local');mode='local';
     await write('state',snapshot);await write('state_stamp',Date.now());
     await write('remote_base',base);
     await onReplace(snapshot); // Writes the compatibility mirror in local mode.
-    note('synced','已切回本地优先；电脑与此设备仍可以联网同步');
+    note(hasCloudData?'synced':'local',hasCloudData?'已切回本地优先；已有云端记录也可离线使用':'已启用本地优先，可离线使用；首次云端上传需你确认');
     return status();
   }
   function schedule(delay=1700){clearTimeout(syncTimer);if(session?.access_token&&!remoteChoice)syncTimer=setTimeout(()=>reconcile().catch(()=>{}),delay)}
