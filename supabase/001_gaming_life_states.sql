@@ -7,10 +7,10 @@ create table if not exists public.gaming_life_states (
   revision bigint not null default 1 check (revision >= 1),
   updated_at timestamptz not null default now(),
   constraint gaming_life_payload_valid check (
-    jsonb_typeof(payload) = 'object'
-    and payload ->> 'version' = '1'
-    and jsonb_typeof(payload -> 'tasks') = 'array'
-    and jsonb_typeof(payload -> 'events') = 'array'
+    coalesce(jsonb_typeof(payload),'') = 'object'
+    and coalesce(payload ->> 'version','') = '1'
+    and coalesce(jsonb_typeof(payload -> 'tasks'),'') = 'array'
+    and coalesce(jsonb_typeof(payload -> 'events'),'') = 'array'
     and octet_length(payload::text) <= 2000000
   )
 );
@@ -57,10 +57,10 @@ begin
   if expected_revision is null or expected_revision < 0 then
     raise exception 'Invalid revision';
   end if;
-  if jsonb_typeof(new_state) <> 'object'
-     or new_state ->> 'version' <> '1'
-     or jsonb_typeof(new_state -> 'tasks') <> 'array'
-     or jsonb_typeof(new_state -> 'events') <> 'array'
+  if coalesce(jsonb_typeof(new_state),'') <> 'object'
+     or coalesce(new_state ->> 'version','') <> '1'
+     or coalesce(jsonb_typeof(new_state -> 'tasks'),'') <> 'array'
+     or coalesce(jsonb_typeof(new_state -> 'events'),'') <> 'array'
      or octet_length(new_state::text) > 2000000 then
     raise exception 'Invalid Gaming Life state';
   end if;
