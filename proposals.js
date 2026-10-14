@@ -20,7 +20,7 @@ const STATUS={pending:'待审核',approved:'已批准',rejected:'已拒绝'};
 let items=[],phase='idle',message='',pendingJson=null;
 let busy=false;
 const cloud=()=>root.GamingLifeCloud;
-const escape=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','"':'&quot;'}[c]));
+const escape=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function changed(){root.dispatchEvent(new Event('gaming-life-proposals-change'))}
 function available(){const c=cloud()?.status();return !!(c?.signedIn&&c?.phase==='synced'&&c?.remoteRevision!==null&&navigator.onLine)}
 function assertReady(){if(!available())throw Error('请先在「设置」登录 Supabase，确认云端状态为「已云端同步」并保持联网')}
@@ -66,7 +66,7 @@ async function submitProposal(raw){
   message='申请已提交，尚未加入正式任务；请在下方审核';
  }catch(e){
   if(/23505|duplicate|409|unique/i.test(String(e.message))){
-   message='发现相同去重键的历史申请，未重复创建';await refresh();return;
+   message='发现相同去重键的历史申请，未重复创建';return;
   }
   throw e;
  }finally{busy=false}
@@ -89,7 +89,7 @@ async function decide(id,action,resolution){
     not_found:'未找到本人名下的申请'}[result?.reason]||('申请审核未成功：'+(result?.reason||'未知原因'));
    message=reason;
   }else{
-   message=action==='reject'?'申请已拒绝':('申请已批准并写入云端存档（修订版 '+result.revision+'）。未自动发放任何 XP 或金币';
+   message=action==='reject'?'申请已拒绝':('申请已批准并写入云端存档（修订版 '+result.revision+'）。未自动发放任何 XP 或金币');
    if(action==='approve'){
     await cloud().reconcile(true);
     if(cloud().status().phase!=='synced')message+='；本设备尚有同步冲突，请在「设置」处理';
