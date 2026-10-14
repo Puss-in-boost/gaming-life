@@ -247,5 +247,5 @@
   }
   function bindNetwork(){root.addEventListener('online',()=>schedule());root.addEventListener('focus',()=>{if(session?.access_token)schedule()})}
   bindNetwork();
-  root.GamingLifeCloud={boot,persist,status,configure,login,logout,choose,reconcile,cloudBackup,enterCloudMode,enterLocalMode,hasUnsynced,waitForWrites:()=>serial,hasDB:()=>isPersistent};
+  root.GamingLifeCloud={boot,persist,status,configure,login,logout,choose,reconcile,cloudBackup,enterCloudMode,enterLocalMode,hasUnsynced,waitForWrites:()=>serial,hasDB:()=>isPersistent,proposalUserId:()=>currentUser,proposalRequest:(path,opts)=>request(path,opts)};
 })(window);
