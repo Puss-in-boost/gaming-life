@@ -20,7 +20,7 @@ const state={
  storylineWins:{},excusedDays:{},
  tasks:[
   {id:'resume',kind:'main',repeat:'once',storylineId:'arc',chapterId:'resume',targetCount:1,active:true,publishedAt:null,sourceLabel:'旧版任务'},
-  {id:'apply',kind:'main',repeat:'daily',storylineId:'arc',chapterId:'apply',targetCount:3,active:true,strictDaily:true,strictSince:'2026-10-13',publishedAt:'2026-10-15T08:30:00Z',sourceLabel:'任务包：求职'},
+  {id:'apply',kind:'main',repeat:'daily',storylineId:'arc',chapterId:'apply',targetCount:3,active:true,strictDaily:true,strictSince:'2026-10-13',publishedAt:'2026-10-15T08:30:00Z',sourceLabel:'任务包：样例'},
  ],
  events:[
   {id:'r1',taskId:'resume',date:'2026-10-13'},
