@@ -276,29 +276,7 @@ function completion(t){let v=eventFor(t);if(v){if(coinsEarned()-(Number(v.coins)
 function uid(){return (crypto?.randomUUID?.()||'id-'+Date.now()+'-'+Math.random().toString(36).slice(2))}
 // AI-free task pack protocol. Only the user can preview/confirm modifications.
 const PACK_FORMAT='gaming-life.quest-pack';
-const CAREER_SPRINT_PACK={format:'gaming-life.quest-pack',version:1,packId:'career-applications-202610',title:'职业启程 · 第一批真实投递',focusId:'first-three-applications',quests:[
- {id:'resume-v1',title:'核对并定稿一份可投递简历',detail:'已准备电力交易预测版和能源调度版候选稿；确认真实经历、联系方式和毕业时间，输出可以正式提交的 PDF。',kind:'side',area:'career',repeat:'once',xp:25,coins:12},
- {id:'position-shortlist',title:'筛选8个有效目标岗位',detail:'记录公司、岗位链接、城市、申请截止时间和毕业届别，优先电力预测、储能优化与调度岗位。',kind:'side',area:'career',repeat:'once',xp:20,coins:8},
- {id:'first-three-applications',title:'完成首批3份真实岗位投递',detail:'尽快向三个匹配岗位实际提交申请并记录公司、岗位、日期和状态；仅收藏招聘信息不算完成。',kind:'main',area:'career',repeat:'once',xp:70,coins:35},
- {id:'weekly-five-applications',title:'每周新增5份匹配岗位投递',detail:'首批完成后启动每周投递节奏，按真实提交数量统计，不重复计入首批。',kind:'main',area:'career',repeat:'weekly',xp:65,coins:30}
-]};
-const PERSONAL_STARTER_PACK={format:'gaming-life.quest-pack',version:1,packId:'gaming-life-opening-202610',title:'毕业试炼 · 第一批平衡任务',focusId:'graduation-progress',quests:[
-{id:'graduation-progress',title:'毕业主线：推进一项论文或送审实际成果',detail:'根据最新实际进度，完成一处具体修改、材料核验或送审准备；保存可核实的结果。',kind:'main',area:'career',repeat:'daily',xp:50,coins:25},
-{id:'training-safe',title:'体魄支线：按计划训练或恢复',detail:'在现有四分化/排球安排内完成一次训练；膝盖不适则优先恢复，不加练刷币。',kind:'side',area:'health',repeat:'daily',xp:20,coins:10},
-{id:'sleep-transition',title:'作息支线：早点结束今晚的娱乐',detail:'比近期常态提早20–30分钟开始睡前准备；不强制23点睡觉。',kind:'side',area:'health',repeat:'daily',xp:15,coins:8},
-{id:'learning-micro',title:'知识支线：讲清一个有趣的概念',detail:'每周选择经济学、电力交易或技术话题，用自己的话留下简要解释。',kind:'side',area:'learning',repeat:'weekly',xp:20,coins:10},
-{id:'budget-review',title:'财务支线：检查一次本周消费',detail:'查看现金流与奖励预算是否稳妥，不需要补录所有历史数据。',kind:'side',area:'finance',repeat:'weekly',xp:15,coins:8},
-{id:'social-step',title:'社交支线：一次真实而自然的交流',detail:'有真实需要或意愿时联系朋友、表达需求，不为了得分凑社交。',kind:'side',area:'social',repeat:'weekly',xp:15,coins:8},
-{id:'local-explore',title:'探索支线：发现一件生活小乐趣',detail:'尝试免费城市漫步、排球、喜欢的书或新的兴趣体验。',kind:'side',area:'explore',repeat:'weekly',xp:15,coins:8}
-]};
-
-
-CAREER_SPRINT_PACK.storyline=structuredClone(STORY_PRESETS.find(a=>a.id==='career-arc'));
-for(const q of CAREER_SPRINT_PACK.quests){q.chapterId=({ 'resume-v1':'resume','position-shortlist':'shortlist','first-three-applications':'apply','weekly-five-applications':'apply'})[q.id];q.targetCount=q.id==='weekly-five-applications'?4:1}
-PERSONAL_STARTER_PACK.storyline=structuredClone(STORY_PRESETS.find(a=>a.id==='graduation-arc'));
-PERSONAL_STARTER_PACK.quests[0].chapterId='revision';
-PERSONAL_STARTER_PACK.quests[0].targetCount=12;
-
+// All personally tailored quest packs are private user data, not public JS constants.
 function checkPack(raw){
  if(typeof raw!=='string'||raw.length>45000)throw Error('任务包文本过长（最多45KB）');
  let pack;try{pack=JSON.parse(raw)}catch(e){throw Error('不是有效的 JSON，请直接复制完整任务包')}
@@ -367,12 +345,37 @@ function importPack(pack){
    if(previous&&previous.kind==='main'&&previous.active!==false)state.secondaryMainId=previous.id;
    state.mainId=mainId;
  }
- if(pack.packId===PERSONAL_STARTER_PACK.packId&&!Object.hasOwn(state.sideChoice,today()))
-    state.sideChoice[today()]=state.tasks.filter(t=>t.packKey===pack.packId+':training-safe'||t.packKey===pack.packId+':sleep-transition').map(t=>t.id);
+
+
+ // Save the approved definition into the same private, RLS-protected player snapshot.
+ state.privatePacks??=[];
+ const oldPack=state.privatePacks.find(x=>x.packId===pack.packId);
+ const definition={format:PACK_FORMAT,version:1,packId:pack.packId,title:pack.title,focusId:pack.focusId||undefined,
+   storyline:pack.storyline||undefined,quests:pack.quests.map(q=>({...q}))};
+ if(oldPack){oldPack.payload=definition;oldPack.title=pack.title;oldPack.updatedAt=now;}
+ else state.privatePacks.push({packId:pack.packId,title:pack.title,createdAt:now,updatedAt:now,origin:'经用户确认导入',payload:definition});
  if(!save())return;
  validatedPack=null;modal='';navigate('today');notify('任务包「'+pack.title+'」已导入，任务来源与主线章节已经更新');
 }
 
+
+
+function privatePackById(packId){return (state.privatePacks||[]).find(p=>p.packId===packId)}
+function privatePackLibrary(){
+ const items=state.privatePacks||[];
+ return `<div class="panel private-pack-panel" style="margin-top:15px"><div class="section-head" style="margin:0 0 8px"><div><h2>🔒 私人任务包库</h2><p>仅存在此账号的游戏存档中，不提交 GitHub</p></div><span class="chip">${items.length} 份</span></div>
+ <p class="hint">导入任务包后保留独立定义、来源和更新时间。已有导入任务从旧存档恢复成私人任务包；原任务、主线、XP 与金币不变。你可以单独导出任务包，或从列表移除定义（不会删除已生成的任务）。</p>
+ ${items.length?items.map(p=>`<div class="activity"><span class="activity-icon">📦</span><div class="activity-main"><strong>${safe(p.title||p.packId)}</strong><small>🔒 ${safe(p.packId)} · ${safe(p.origin||'私人导入')} · ${p.createdAt?'创建：'+safe(p.createdAt.slice(0,10)):'原始日期未知'}</small></div><div class="pack-actions"><button class="btn btn-small btn-ghost" data-action="private-pack-preview" data-id="${safe(p.packId)}">查看</button><button class="btn btn-small btn-ghost" data-action="private-pack-export" data-id="${safe(p.packId)}">导出</button><button class="btn btn-small btn-ghost" data-action="private-pack-forget" data-id="${safe(p.packId)}">移出库</button></div></div>`).join(''):`<div class="empty"><strong>这里还没有私人任务包</strong><p>点击「导入任务包」粘贴你的专属 JSON，审核确认后存入私人存档，不会公开到代码仓库。</p></div>`}
+ <div class="data-actions"><button class="btn btn-primary" data-action="open-pack">＋ 导入私人任务包</button><button class="btn" data-action="copy-snapshot">↗ 主动复制当前游戏状态</button></div></div>`;
+}
+function exportPrivatePack(packId){
+ const p=privatePackById(packId);if(!p)return notify('未找到此任务包');
+ const data=JSON.stringify(p.payload,null,2),blob=new Blob([data],{type:'application/json'});
+ const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;
+ a.download='GamingLife-private-pack-'+String(packId).replace(/[^a-zA-Z0-9_-]/g,'')+'.json';
+ document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),800);
+ notify('私人任务包已导出，请勿上传到公开仓库');
+}
 
 function storyFor(id){return (state.storylines||[]).find(x=>x.id===id)}
 function taskStory(t){return t.storylineId?storyFor(t.storylineId):null}
