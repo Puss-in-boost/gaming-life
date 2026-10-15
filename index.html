@@ -90,21 +90,11 @@
 const KEY='gaming-life-v1-local';
 const AREAS=[['career','职业与专业','💼'],['learning','认知与知识','📚'],['finance','经济与财务','💰'],['social','人格与社交','🤝'],['health','体魄与健康','💪'],['explore','生活与探索','🧭']];
 const NAV=[['today','今日','✦'],['rewards','奖励','🎁'],['journey','旅程','◇'],['history','日志','▤'],['settings','设置','⚙']];
-const DEFAULT_TASKS=[
-  {id:'thesis',title:'论文主线 · 完成一处真实修改',detail:'根据最新反馈，完成一项具体正文、图表或送审准备；保存修改成果。优先本周3–4次，工作日拆小单元。',kind:'main',area:'career',xp:50,coins:25,repeat:'daily',icon:'📄',active:true},
-  {id:'workout',title:'力量训练 / 排球 / 合理恢复',detail:'按既定计划训练或进行恢复，不为了奖励加大训练量、忽略膝盖不适。',kind:'side',area:'health',xp:20,coins:10,repeat:'daily',icon:'💪',active:true},
-  {id:'learn',title:'学习并讲明一个新概念',detail:'选择经济学、电力交易或感兴趣的知识，留下自己的简短解释；每周1–2次即可。',kind:'side',area:'learning',xp:20,coins:10,repeat:'daily',icon:'📚',active:true},
-  {id:'sleep',title:'提早开始睡前准备',detail:'按近况把睡前娱乐结束时间稍微提早约20–30分钟；不强制提前入睡，也不奖励熬夜。',kind:'side',area:'health',xp:15,coins:8,repeat:'daily',icon:'🌙',active:true},
-  {id:'career',title:'职业过渡 · 一个实际成果',detail:'岗位调研、优化一处简历或完成一次真实交付，不按单纯工时发金币。',kind:'side',area:'career',xp:20,coins:10,repeat:'weekly',icon:'🧩',active:true},
-  {id:'money',title:'本周财务整理',detail:'核对本周预算与支出，避免为兑换奖励增加经济压力。',kind:'side',area:'finance',xp:15,coins:8,repeat:'weekly',icon:'💰',active:true},
-  {id:'social',title:'一次有意义的交流',detail:'在有真实意愿时主动表达或联系朋友，无须为了经验值制造社交。',kind:'side',area:'social',xp:15,coins:8,repeat:'weekly',icon:'🤝',active:true},
-  {id:'explore',title:'一次生活探索',detail:'免费城市漫步、排球、阅读、朋友活动或者新的体验。',kind:'side',area:'explore',xp:15,coins:8,repeat:'weekly',icon:'🧭',active:true}
-];
+// Public source contains no personal task definitions. Import private plans after login.
+const DEFAULT_TASKS=[];
 const MILESTONES=[
-{id:'revision',title:'完成论文主要修改',desc:'以可确认的论文成果为准。',xp:150},
-{id:'review',title:'完成下一步送审事务',desc:'按照学校的真实流程推进，不预设审核结果。',xp:150},
-{id:'graduation',title:'完成毕业阶段',desc:'完成必要的答辩及毕业事项。',xp:200},
-{id:'job',title:'获得合适的职业起点',desc:'找到符合现实条件、值得尝试的工作机会。',xp:200}
+ {id:'first-quest',title:'完成首个真实任务',desc:'在自己的私人任务库中完成一次挑战。',xp:30},
+ {id:'chapter-finish',title:'完成一个长期章节',desc:'在现实中达成一个自己定义的阶段目标。',xp:50}
 ];
 const DEFAULT_REWARDS=[
  {id:'title-explorer',icon:'🎖️',title:'称号 · 初级探险家',detail:'永久解锁一条游戏内称号，在角色等级旁展示。',price:15,rmb:0,category:'虚拟',active:true,titleUnlock:'初级探险家'},
@@ -116,25 +106,44 @@ const DEFAULT_REWARDS=[
  {id:'movie-out',icon:'🍿',title:'简单线下娱乐活动',detail:'平价电影票、展览或活动，参考预算20元；活动真实价格优先。',price:110,rmb:20,category:'低预算',active:true}
 ];
 
-const STORY_PRESETS=[
- {id:'graduation-arc',title:'毕业试炼',goal:'完成硕士论文修改、送审和毕业相关流程，以真实学校安排为准。',source:'内置规划',chapters:[{id:'revision',title:'第一章 · 论文定稿',goal:'完成可核实的论文修改和提交准备'},{id:'review',title:'第二章 · 送审与反馈',goal:'按学院流程完成审查及反馈处理'},{id:'finish',title:'第三章 · 毕业收官',goal:'完成真实答辩及毕业事项'}]},
- {id:'career-arc',title:'职业启程',goal:'完成简历定稿、真实岗位投递并建立可持续的求职流程，最终获得适合的工作机会。',source:'内置规划',chapters:[{id:'resume',title:'第一章 · 整备装备',goal:'完成简历与岗位方向准备'},{id:'shortlist',title:'第二章 · 侦察岗位',goal:'筛选并核对合适的岗位'},{id:'apply',title:'第三章 · 正式出征',goal:'提交真实申请并持续跟进'}]}
-];
-const LEGACY_STORY_STEPS={
- thesis:['graduation-arc','revision',12],
- 'gaming-life-opening-202610:graduation-progress':['graduation-arc','revision',12],
- 'career-applications-202610:resume-v1':['career-arc','resume',1],
- 'career-applications-202610:position-shortlist':['career-arc','shortlist',1],
- 'career-applications-202610:first-three-applications':['career-arc','apply',1],
- 'career-applications-202610:weekly-five-applications':['career-arc','apply',4]
-};
+// Long-running chapters belong to individual player data, never to public templates.
+const STORY_PRESETS=[];
+const LEGACY_STORY_STEPS={};
 
-const DEFAULT=()=>({version:1,createdAt:new Date().toISOString(),tasks:structuredClone(DEFAULT_TASKS),storylines:structuredClone(STORY_PRESETS),storylineWins:{},excusedDays:{},events:[],notes:[],milestones:{},modes:{},sideChoice:{},mainId:'thesis',secondaryMainId:null,questProgress:{},progressHistory:[],rewards:structuredClone(DEFAULT_REWARDS),redemptions:[],legacyCoinCredit:0,rewardEconomyVersion:2,monthlyRewardBudgetRmb:30,equippedTitle:''});
+const DEFAULT=()=>({version:1,createdAt:new Date().toISOString(),tasks:structuredClone(DEFAULT_TASKS),privatePacks:[],privatePacksVersion:1,storylines:structuredClone(STORY_PRESETS),storylineWins:{},excusedDays:{},events:[],notes:[],milestones:{},modes:{},sideChoice:{},mainId:null,secondaryMainId:null,questProgress:{},progressHistory:[],rewards:structuredClone(DEFAULT_REWARDS),redemptions:[],legacyCoinCredit:0,rewardEconomyVersion:2,monthlyRewardBudgetRmb:30,equippedTitle:''});
+
+function recoverPrivatePacks(old){
+ // Only convert previously user-confirmed imported packs; never invent progress or publish dates.
+ const groups=new Map();
+ for(const t of Array.isArray(old.tasks)?old.tasks:[]){
+   const match=typeof t.packKey==='string'&&t.packKey.match(/^([a-zA-Z0-9_-]{3,60}):([a-zA-Z0-9_-]{1,60})$/);
+   if(!match||!['main','side'].includes(t.kind)||!['once','daily','weekly'].includes(t.repeat)||!AREAS.some(a=>a[0]===t.area))continue;
+   const packId=match[1],id=match[2];
+   if(!groups.has(packId)&&groups.size<60)groups.set(packId,[]);
+   const group=groups.get(packId);if(group&&group.length<30)group.push({id,title:t.title||'旧任务',detail:t.detail||'',kind:t.kind,area:t.area,repeat:t.repeat,xp:t.xp,coins:t.coins,chapterId:t.chapterId||undefined,targetCount:t.targetCount||1});
+ }
+ const archived=[];
+ for(const [packId,quests] of groups){
+   const sample=(old.tasks||[]).find(t=>t.packKey?.startsWith(packId+':'));
+   const storyId=sample?.storylineId;
+   const story=(old.storylines||[]).find(a=>a.id===storyId);
+   const validStory=story&&Array.isArray(story.chapters)&&story.chapters.length>0?
+     {id:story.id,title:story.title,goal:story.goal,chapters:story.chapters.map(c=>({id:c.id,title:c.title,goal:c.goal||''}))}:null;
+   if(!validStory)quests.forEach(q=>delete q.chapterId);
+   const title=sample?.sourceLabel?.startsWith('任务包：')?sample.sourceLabel.slice(4):'历史任务包 '+packId;
+   const selected=(old.tasks||[]).find(t=>t.id===old.mainId&&t.packKey?.startsWith(packId+':'));
+   archived.push({packId,title,createdAt:sample?.publishedAt||null,updatedAt:null,origin:'旧存档恢复',
+     payload:{format:'gaming-life.quest-pack',version:1,packId,title,focusId:selected?.packKey?.split(':')[1]||undefined,storyline:validStory||undefined,quests}});
+ }
+ return archived;
+}
 // Preserve the old 1 XP : 1 coin wallet and redemption history exactly once.
 // Existing claims are sealed as legacy; new claims earn independent coin rewards.
 function migrate(v){
  const base={...DEFAULT(),...v};
  base.storylines=Array.isArray(v.storylines)?v.storylines:structuredClone(STORY_PRESETS);
+ base.privatePacks=v.privatePacksVersion===1&&Array.isArray(v.privatePacks)?v.privatePacks:recoverPrivatePacks(v);
+ base.privatePacksVersion=1;
  base.storylineWins=v.storylineWins&&typeof v.storylineWins==='object'&&!Array.isArray(v.storylineWins)?v.storylineWins:{};
  base.excusedDays=v.excusedDays&&typeof v.excusedDays==='object'&&!Array.isArray(v.excusedDays)?v.excusedDays:{};
  base.tasks=(Array.isArray(v.tasks)?v.tasks:structuredClone(DEFAULT_TASKS)).map(t=>{
