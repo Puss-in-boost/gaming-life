@@ -57,7 +57,7 @@ const imported={format:'gaming-life.quest-pack',version:1,packId:'example-test',
 let nextId=0;
 const store={tasks:[],privatePacks:[],storylines:[],sideChoice:{},events:[],milestones:{},mainId:null,secondaryMainId:null};
 const simulation=vm.createContext({
- state:store,validatedPack:null,modal:'pack',packKey:(p,id)=>p+':'+id,
+ state:store,PACK_FORMAT:'gaming-life.quest-pack',validatedPack:null,modal:'pack',packKey:(p,id)=>p+':'+id,
  storyFor:id=>store.storylines.find(a=>a.id===id),taskById:id=>store.tasks.find(t=>t.id===id), 
  uid:()=> 'generated-'+(++nextId),coinsForTask:q=>q.coins??15,areaInfo:()=>['learning','Learning','📘'],
  save:()=>true,navigate:()=>{},notify:()=>{},today:()=> '2026-10-15'
