@@ -19,7 +19,37 @@
     .reward-teaser{display:flex;align-items:center;gap:13px;padding:13px 16px;margin-top:15px;background:linear-gradient(110deg,#302b35,#263a45);border:1px solid #665842;border-radius:17px}.reward-teaser-icon{display:grid;place-items:center;background:#614d39;width:42px;height:42px;border-radius:13px;font-size:23px;flex:0 0 42px}.reward-teaser>div:nth-child(2){flex:1;min-width:0}.reward-teaser strong,.reward-teaser span{display:block}.reward-teaser strong{font-size:14px}.reward-teaser span{color:#ded1bb;font-size:12px;margin-top:3px}.reward-wallet{display:flex;align-items:center;justify-content:space-between;gap:16px;border-radius:22px;border:1px solid #7f6848;background:linear-gradient(135deg,#453827,#202b3d);padding:22px;margin:10px 0 14px}.reward-wallet>div:first-child{display:grid;gap:5px}.reward-label{color:#dbbd8e;font-size:12px;letter-spacing:1px;font-weight:800}.wallet-amount{font-size:36px;line-height:1.25;color:var(--gold)}.reward-wallet-right{display:grid;gap:8px;text-align:right;color:#d7bf9a;font-size:12px}.reward-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px}.reward-card{display:flex;gap:13px;padding:18px;background:var(--surface);border:1px solid #4a4755;border-radius:18px;min-width:0}.reward-icon{font-size:27px;background:#332f46;display:grid;place-items:center;flex:0 0 52px;width:52px;height:52px;border-radius:15px}.reward-content{display:grid;flex:1;min-width:0}.reward-content h3{font-size:15px;margin:0 0 6px}.reward-content p{font-size:12px;color:var(--muted);margin:0 0 14px}.reward-card-bottom{display:flex;align-items:center;justify-content:space-between;gap:10px}.reward-card-bottom strong{color:var(--gold);white-space:nowrap}.reward-bag-actions{display:flex;gap:6px;align-items:center;flex-wrap:wrap}.reward-disabled{opacity:.45}.achievement-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.achievement{display:flex;flex-direction:column;align-items:center;gap:5px;text-align:center;border:1px solid #46556e;background:#222b3f;padding:18px 11px;border-radius:15px}.achievement-icon{font-size:28px}.achievement strong{font-size:13px}.achievement small{font-size:11px;color:#bbc5d6}.achievement.locked{opacity:.55;filter:grayscale(.45)}
     @media(max-width:850px){.reward-grid{grid-template-columns:1fr}}
     @media(max-width:680px){.reward-teaser{flex-wrap:wrap}.reward-teaser .btn{width:100%}.reward-wallet{align-items:flex-start;flex-direction:column}.reward-wallet-right{text-align:left}.achievement-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.reward-card{padding:14px}.reward-card-bottom{flex-wrap:wrap}.reward-card-bottom .btn{flex:1}.reward-bag-actions{flex-wrap:wrap}}
-  </style>
+  
+/* V1.7 · long-running story chapters and character HUD */
+.hero-top{flex-wrap:wrap}
+.hero-top [data-action="open-character"]{margin-left:auto;align-self:flex-start}
+.story-teaser{margin:12px 0 16px}
+.story-teaser p{font-size:13px;color:var(--muted);margin:8px 0 13px}
+.story-teaser .hint{margin:8px 0 0}
+.story-panel{margin:14px 0}
+.story-panel .section-head{margin-top:0}
+.story-panel .section-head p{max-width:650px}
+.story-panel .compact-log{margin:12px 0}
+.story-panel .activity{gap:8px}
+.story-panel .activity small{display:block;line-height:1.5}
+.quest-origin{font-size:11px;opacity:.75}
+.quest-copy>.progress{max-width:420px;margin:8px 0}
+.character-sheet .sheet-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:20px}
+.character-sheet .sheet-stats>div{border:1px solid var(--stroke);border-radius:12px;padding:14px 8px;text-align:center}
+.character-sheet .sheet-stats strong{display:block;font-size:19px}
+.character-sheet .sheet-stats small{font-size:11px;color:var(--muted)}
+.character-sheet .domain{margin:12px 0}
+.modal-wide{max-width:720px}
+@media(max-width:580px){
+ .character-sheet .sheet-stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .character-sheet .domain{grid-template-columns:92px minmax(0,1fr) 36px;gap:8px;font-size:11px}
+ .story-panel .section-head{flex-wrap:wrap}
+ .story-panel .activity{align-items:flex-start}
+ .story-panel .activity .btn{flex-shrink:0}
+ .hero-top [data-action="open-character"]{margin-left:0}
+}
+
+</style>
   <link rel="manifest" href="./manifest.webmanifest" />
 <style>
  .quest-actions{display:flex;gap:8px;align-items:center;justify-content:flex-end;flex-wrap:wrap;flex-shrink:0}
@@ -384,7 +414,7 @@ function questOrigin(t){
 function storylineCards(){
  return (state.storylines||[]).map(story=>{
    const stat=storylineStats(story),pct=Math.round(stat.rate*100);
-   return `<section class="panel story-panel"><div class="section-head"><div><h2>📖 ${safe(story.title)}</h2><p>最终目标：${safe(story.goal)}</p></div><span class="xp-pill">${pct}%</span></div><div class="progress" role="progressbar" aria-label="${safe(story.title)}主线进度" aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100"><span style="width:${pct}%"></span></div><p class="hint">${stat.done}/${stat.total} 个有任务的章节达标 · ${safe(story.source||'用户创建')}${stat.finalReached?' · 最终目标已确认':' · 最终目标待确认'}</p><div class="data-actions"><button class="btn btn-small ${stat.stageRate<1?'btn-ghost':''}" data-action="storyline-win" data-id="${safe(story.id)}" ${stat.stageRate<1?'disabled title="请先完成全部章节"':''}>${stat.finalReached?'↶ 撤销终极达成':'🏆 确认最终目标达成'}</button></div>${stat.chapters.map(c=>{
+   return `<section class="panel story-panel"><div class="section-head"><div><h2>📖 ${safe(story.title)}</h2><p>最终目标：${safe(story.goal)}</p></div><span class="xp-pill">${pct}%</span></div><div class="progress" role="progressbar" aria-label="${safe(story.title)}主线进度" aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100"><span style="width:${pct}%"></span></div><p class="hint">${stat.done}/${stat.total} 个章节达标 · ${safe(story.source||'用户创建')}${stat.finalReached?' · 最终目标已确认':' · 最终目标待确认'}</p><div class="data-actions"><button class="btn btn-small ${stat.stageRate<1?'btn-ghost':''}" data-action="storyline-win" data-id="${safe(story.id)}" ${stat.stageRate<1?'disabled title="请先完成全部章节"':''}>${stat.finalReached?'↶ 撤销终极达成':'🏆 确认最终目标达成'}</button></div>${stat.chapters.map(c=>{
     const cpct=Math.round(c.rate*100);
     return `<details class="compact-log"><summary>${safe(c.chapter.title)} · ${cpct}%（${c.done}/${c.total}）</summary><p class="hint">${safe(c.chapter.goal||'完成本章节对应步骤')}</p><div class="progress"><span style="width:${cpct}%"></span></div>${c.steps.map(t=>`<div class="activity"><div class="activity-main"><strong>${safe(t.title)}</strong><small>${missionCount(t)}/${missionGoal(t)} 次 · ${safe(questOrigin(t))}</small></div><button class="btn btn-small btn-ghost" data-action="quest-detail" data-id="${safe(t.id)}">详情</button></div>`).join('')||'<p class="hint">尚未分配任务。创建任务时可选择此章节。</p>'}</details>`;
    }).join('')}</section>`;
