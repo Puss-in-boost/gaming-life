@@ -5,6 +5,7 @@ on:
       - index.html
       - cloud.js
       - tests/v17.test.mjs
+      - tests/v18.test.mjs
       - .github/workflows/verify-v17.yml
   push:
     branches: [main]
@@ -12,6 +13,7 @@ on:
       - index.html
       - cloud.js
       - tests/v17.test.mjs
+      - tests/v18.test.mjs
 jobs:
   v17-unit:
     runs-on: ubuntu-latest
@@ -21,4 +23,4 @@ jobs:
         with:
           node-version: '22'
       - name: Verify app syntax and V1.7 data rules
-        run: node tests/v17.test.mjs
+        run: node tests/v17.test.mjs && node tests/v18.test.mjs

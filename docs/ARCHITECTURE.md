@@ -23,3 +23,6 @@ Gaming Life is the standalone app. Life OS may later be incorporated as the **ch
 
 ## Deployment
 GitHub Actions deploys this repository as a standalone static GitHub Pages site from the repository root. No database setup is required for V1.
+
+## Current privacy boundary (V1.8)
+GitHub Pages publishes only reusable game code and a generic quest-pack example. Private player plans are held in `state.privatePacks` within browser storage and the authenticated user's Supabase JSONB snapshot. Older imported packs are recovered from their `packKey` tasks if possible; XP and event history are preserved. Public commit history from older versions is **not** retroactively erased. Never put real personal quest JSON in the repository.
