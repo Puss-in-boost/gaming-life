@@ -289,6 +289,68 @@ function importPack(pack){
  if(!save())return;
  validatedPack=null;modal='';navigate('today');notify(`任务包「${pack.title}」已导入，历史进度保留`);
 }
+
+function storyFor(id){return (state.storylines||[]).find(x=>x.id===id)}
+function taskStory(t){return t.storylineId?storyFor(t.storylineId):null}
+function chapterFor(t){return taskStory(t)?.chapters?.find(c=>c.id===t.chapterId)||null}
+function missionCount(t){return state.events.filter(e=>e.taskId===t.id).length}
+function missionGoal(t){return Math.max(1,Math.min(100,Number(t.targetCount)||1))}
+function missionRatio(t){return Math.min(1,missionCount(t)/missionGoal(t))}
+function chapterStats(story,chapter){
+ const steps=state.tasks.filter(t=>t.storylineId===story.id&&t.chapterId===chapter.id&&t.active!==false);
+ if(!steps.length)return {steps,rate:0,done:0,total:0};
+ return {steps,rate:steps.reduce((n,t)=>n+missionRatio(t),0)/steps.length,done:steps.filter(t=>missionRatio(t)===1).length,total:steps.length};
+}
+function storylineStats(story){
+ const cs=(story.chapters||[]).map(c=>({...chapterStats(story,c),chapter:c}));
+ const withSteps=cs.filter(c=>c.total>0);
+ return {chapters:cs,rate:withSteps.length?withSteps.reduce((n,c)=>n+c.rate,0)/withSteps.length:0,
+   done:withSteps.filter(c=>c.rate===1).length,total:withSteps.length};
+}
+function dateOffset(days){
+ const d=new Date(today()+'T12:00:00');d.setDate(d.getDate()+days);
+ return [d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-');
+}
+function missedContractDays(t){
+ if(!t.strictDaily||t.kind!=='main'||t.repeat!=='daily'||t.active===false||!t.strictSince)return [];
+ const end=today(),start=dateOffset(-7),first=t.strictSince>start?t.strictSince:start;
+ const missing=[];
+ for(let i=7;i>=1;i--){
+  const date=dateOffset(-i);
+  if(date<first||date>=end)continue;
+  if(state.events.some(e=>e.taskId===t.id&&e.date===date))continue;
+  if(state.excusedDays?.[t.id+'|'+date])continue;
+  missing.push(date);
+ }
+ return missing;
+}
+function honorStats(){
+ const duties=state.tasks.filter(t=>t.strictDaily&&t.kind==='main'&&t.repeat==='daily'&&t.active!==false);
+ const missed=duties.flatMap(t=>missedContractDays(t).map(date=>({task:t,date})));
+ return {value:Math.max(70,100-4*missed.length),missed,duties};
+}
+function questOrigin(t){
+ const created=t.publishedAt?humanDate(t.publishedAt.slice(0,10)):'旧版任务 · 发布日期未知';
+ const updated=t.updatedAt?' · 最近更新 '+humanDate(t.updatedAt.slice(0,10)):'';
+ return '发布：'+created+' · 来源：'+(t.sourceLabel||'未记录')+updated;
+}
+function storylineCards(){
+ return (state.storylines||[]).map(story=>{
+   const stat=storylineStats(story),pct=Math.round(stat.rate*100);
+   return `<section class="panel story-panel"><div class="section-head"><div><h2>📖 ${safe(story.title)}</h2><p>最终目标：${safe(story.goal)}</p></div><span class="xp-pill">${pct}%</span></div><div class="progress" role="progressbar" aria-label="${safe(story.title)}主线进度" aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100"><span style="width:${pct}%"></span></div><p class="hint">${stat.done}/${stat.total} 个有任务的章节达标 · ${safe(story.source||'用户创建')}</p>${stat.chapters.map(c=>{
+    const cpct=Math.round(c.rate*100);
+    return `<details class="compact-log"><summary>${safe(c.chapter.title)} · ${cpct}%（${c.done}/${c.total}）</summary><p class="hint">${safe(c.chapter.goal||'完成本章节对应步骤')}</p><div class="progress"><span style="width:${cpct}%"></span></div>${c.steps.map(t=>`<div class="activity"><div class="activity-main"><strong>${safe(t.title)}</strong><small>${missionCount(t)}/${missionGoal(t)} 次 · ${safe(questOrigin(t))}</small></div><button class="btn btn-small btn-ghost" data-action="quest-detail" data-id="${safe(t.id)}">详情</button></div>`).join('')||'<p class="hint">尚未分配任务。创建任务时可选择此章节。</p>'}</details>`;
+   }).join('')}</section>`;
+ }).join('');
+}
+function characterPanel(){
+ const xp=totalXP(),level=levelInfo(xp),honor=honorStats();
+ const domain=Object.fromEntries(AREAS.map(([id])=>[id,0]));
+ state.events.forEach(e=>{if(e.area in domain)domain[e.area]+=Number(e.xp)||0});
+ const max=Math.max(100,...Object.values(domain));
+ return `<div class="character-sheet"><div class="sheet-stats"><div><strong>LV.${level.level}</strong><small>冒险等级</small></div><div><strong>${xp} XP</strong><small>累计经验</small></div><div><strong>🪙 ${coinBalance()}</strong><small>奖励币</small></div><div><strong>${honor.value}/100</strong><small>近7日纪律值</small></div></div><div class="section-head"><h3>📜 主线进度</h3></div>${(state.storylines||[]).map(a=>{const p=Math.round(storylineStats(a).rate*100);return `<div class="domain"><span>${safe(a.title)}</span><div class="progress"><span style="width:${p}%"></span></div><strong>${p}%</strong></div>`}).join('')}<div class="section-head"><h3>🌱 六维成长</h3></div>${AREAS.map(([id,name,icon])=>`<div class="domain"><span>${icon} ${name}</span><div class="progress"><span style="width:${100*domain[id]/max}%"></span></div><strong>${domain[id]}</strong></div>`).join('')}<p class="hint">纪律值仅反映最近7天主动签订的每日契约；缺勤一天 -4，最低70。不扣经验、金币或现实奖励。成长领域是游戏记录，不是能力测评。</p>${honor.missed.length?`<div class="section-head"><h3>⏳ 待处理的每日契约</h3></div>${honor.missed.map(m=>`<div class="activity"><div class="activity-main"><strong>${safe(m.task.title)}</strong><small>${safe(m.date)} · 未完成（-4纪律值）</small></div><button class="btn btn-small" data-action="excuse-day" data-id="${safe(m.task.id)}" data-date="${m.date}">请假 / 纠正</button></div>`).join('')}`:''}</div>`;
+}
+
 function stateSnapshot(){
  const weekAgo=new Date();weekAgo.setDate(weekAgo.getDate()-7);const cutoff=weekAgo.toISOString().slice(0,10);
  const recent=state.events.filter(e=>e.date>=cutoff).sort((a,b)=>b.at.localeCompare(a.at)).slice(0,40);
