@@ -99,12 +99,13 @@ const LEGACY_STORY_STEPS={
  'career-applications-202610:weekly-five-applications':['career-arc','apply',4]
 };
 
-const DEFAULT=()=>({version:1,createdAt:new Date().toISOString(),tasks:structuredClone(DEFAULT_TASKS),storylines:structuredClone(STORY_PRESETS),excusedDays:{},events:[],notes:[],milestones:{},modes:{},sideChoice:{},mainId:'thesis',secondaryMainId:null,questProgress:{},progressHistory:[],rewards:structuredClone(DEFAULT_REWARDS),redemptions:[],legacyCoinCredit:0,rewardEconomyVersion:2,monthlyRewardBudgetRmb:30,equippedTitle:''});
+const DEFAULT=()=>({version:1,createdAt:new Date().toISOString(),tasks:structuredClone(DEFAULT_TASKS),storylines:structuredClone(STORY_PRESETS),storylineWins:{},excusedDays:{},events:[],notes:[],milestones:{},modes:{},sideChoice:{},mainId:'thesis',secondaryMainId:null,questProgress:{},progressHistory:[],rewards:structuredClone(DEFAULT_REWARDS),redemptions:[],legacyCoinCredit:0,rewardEconomyVersion:2,monthlyRewardBudgetRmb:30,equippedTitle:''});
 // Preserve the old 1 XP : 1 coin wallet and redemption history exactly once.
 // Existing claims are sealed as legacy; new claims earn independent coin rewards.
 function migrate(v){
  const base={...DEFAULT(),...v};
  base.storylines=Array.isArray(v.storylines)?v.storylines:structuredClone(STORY_PRESETS);
+ base.storylineWins=v.storylineWins&&typeof v.storylineWins==='object'&&!Array.isArray(v.storylineWins)?v.storylineWins:{};
  base.excusedDays=v.excusedDays&&typeof v.excusedDays==='object'&&!Array.isArray(v.excusedDays)?v.excusedDays:{};
  base.tasks=(Array.isArray(v.tasks)?v.tasks:structuredClone(DEFAULT_TASKS)).map(t=>{
    const inherited=LEGACY_STORY_STEPS[t.packKey||t.id];
@@ -278,7 +279,7 @@ function checkPack(raw){
   if(!Number.isInteger(q.xp)||q.xp<5||q.xp>80)throw Error(`任务 ${id} 的 XP 应为5–80之间的整数`);if(q.coins!==undefined&&(!Number.isInteger(q.coins)||q.coins<0||q.coins>80))throw Error(`任务 ${id} 的奖励币应为0–80`);
   if(q.chapterId!==undefined&&(typeof q.chapterId!=='string'||! /^[a-zA-Z0-9_-]{1,60}$/.test(q.chapterId)))throw Error('chapterId 必须是章节 ID');
   if(q.targetCount!==undefined&&(!Number.isInteger(q.targetCount)||q.targetCount<1||q.targetCount>100))throw Error('targetCount 必须为 1–100');
-  normalized.push({id, title:title.trim(),detail:detail.trim(),kind:q.kind,area:q.area,repeat:q.repeat,xp:q.xp,coins:q.coins,chapterId:q.chapterId??null,targetCount:q.targetCount??1});
+  normalized.push({id, title:title.trim(),detail:detail.trim(),kind:q.kind,area:q.area,repeat:q.repeat,xp:q.xp,coins:q.coins,chapterId:q.chapterId??null,targetCount:q.targetCount??null});
  }
  if(pack.focusId!==undefined&&pack.focusId!==null&&(!used.has(pack.focusId)||normalized.find(q=>q.id===pack.focusId)?.kind!=='main'))throw Error('focusId 必须指向本任务包中的主线任务');
  let story=null;
@@ -316,7 +317,7 @@ function importPack(pack){
       coins:q.coins===undefined?coinsForTask(q):q.coins,icon:areaInfo(q.area)[2],active:true,
       storylineId:pack.storyline?.id??t?.storylineId??null,
       chapterId:q.chapterId??t?.chapterId??null,
-      targetCount:q.targetCount,
+      targetCount:q.targetCount??t?.targetCount??1,
       sourceLabel:t?.sourceLabel||'任务包：'+pack.title,updatedAt:now};
    if(t){Object.assign(t,values)}
    else{t={id:uid(),packKey:key,publishedAt:now,...values};state.tasks.push(t)}
@@ -341,15 +342,17 @@ function missionCount(t){return state.events.filter(e=>e.taskId===t.id).length}
 function missionGoal(t){return Math.max(1,Math.min(100,Number(t.targetCount)||1))}
 function missionRatio(t){return Math.min(1,missionCount(t)/missionGoal(t))}
 function chapterStats(story,chapter){
- const steps=state.tasks.filter(t=>t.storylineId===story.id&&t.chapterId===chapter.id&&t.active!==false);
+ const steps=state.tasks.filter(t=>t.storylineId===story.id&&t.chapterId===chapter.id);
  if(!steps.length)return {steps,rate:0,done:0,total:0};
  return {steps,rate:steps.reduce((n,t)=>n+missionRatio(t),0)/steps.length,done:steps.filter(t=>missionRatio(t)===1).length,total:steps.length};
 }
 function storylineStats(story){
  const cs=(story.chapters||[]).map(c=>({...chapterStats(story,c),chapter:c}));
- const withSteps=cs.filter(c=>c.total>0);
- return {chapters:cs,rate:withSteps.length?withSteps.reduce((n,c)=>n+c.rate,0)/withSteps.length:0,
-   done:withSteps.filter(c=>c.rate===1).length,total:withSteps.length};
+ const completedChapters=cs.filter(c=>c.rate===1).length;
+ const stageRate=cs.length?cs.reduce((n,c)=>n+c.rate,0)/cs.length:0;
+ const finalReached=!!state.storylineWins?.[story.id];
+ return {chapters:cs,stageRate,finalReached,rate:stageRate*.9+(finalReached?.1:0),
+   done:completedChapters,total:cs.length};
 }
 function dateOffset(days){
  const d=new Date(today()+'T12:00:00');d.setDate(d.getDate()+days);
@@ -381,7 +384,7 @@ function questOrigin(t){
 function storylineCards(){
  return (state.storylines||[]).map(story=>{
    const stat=storylineStats(story),pct=Math.round(stat.rate*100);
-   return `<section class="panel story-panel"><div class="section-head"><div><h2>📖 ${safe(story.title)}</h2><p>最终目标：${safe(story.goal)}</p></div><span class="xp-pill">${pct}%</span></div><div class="progress" role="progressbar" aria-label="${safe(story.title)}主线进度" aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100"><span style="width:${pct}%"></span></div><p class="hint">${stat.done}/${stat.total} 个有任务的章节达标 · ${safe(story.source||'用户创建')}</p>${stat.chapters.map(c=>{
+   return `<section class="panel story-panel"><div class="section-head"><div><h2>📖 ${safe(story.title)}</h2><p>最终目标：${safe(story.goal)}</p></div><span class="xp-pill">${pct}%</span></div><div class="progress" role="progressbar" aria-label="${safe(story.title)}主线进度" aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100"><span style="width:${pct}%"></span></div><p class="hint">${stat.done}/${stat.total} 个有任务的章节达标 · ${safe(story.source||'用户创建')}${stat.finalReached?' · 最终目标已确认':' · 最终目标待确认'}</p><div class="data-actions"><button class="btn btn-small ${stat.stageRate<1?'btn-ghost':''}" data-action="storyline-win" data-id="${safe(story.id)}" ${stat.stageRate<1?'disabled title="请先完成全部章节"':''}>${stat.finalReached?'↶ 撤销终极达成':'🏆 确认最终目标达成'}</button></div>${stat.chapters.map(c=>{
     const cpct=Math.round(c.rate*100);
     return `<details class="compact-log"><summary>${safe(c.chapter.title)} · ${cpct}%（${c.done}/${c.total}）</summary><p class="hint">${safe(c.chapter.goal||'完成本章节对应步骤')}</p><div class="progress"><span style="width:${cpct}%"></span></div>${c.steps.map(t=>`<div class="activity"><div class="activity-main"><strong>${safe(t.title)}</strong><small>${missionCount(t)}/${missionGoal(t)} 次 · ${safe(questOrigin(t))}</small></div><button class="btn btn-small btn-ghost" data-action="quest-detail" data-id="${safe(t.id)}">详情</button></div>`).join('')||'<p class="hint">尚未分配任务。创建任务时可选择此章节。</p>'}</details>`;
    }).join('')}</section>`;
@@ -519,6 +522,16 @@ function clickHandler(e){const btn=e.target.closest('button[data-action]');if(!b
  if(action==='open-story-create'){modal='story-create';render();return}
  if(action==='quest-detail'){progressTaskId=id;modal='quest-detail';render();return}
  if(action==='open-contract'){progressTaskId=id;modal='contract';render();return}
+ if(action==='storyline-win'){
+  if(window.GamingLifeCloud?.status().mode==='cloud'&&!window.GamingLifeCloud.status().canEdit)return notify('云端暂不可编辑');
+  const story=storyFor(id);if(!story)return;
+  if(state.storylineWins[id]){if(!confirm('撤销最终目标达成标记？不影响实际任务 XP 与金币。'))return;delete state.storylineWins[id];}
+  else{if(storylineStats(story).stageRate<1)return notify('请先完成该主线的全部章节步骤');
+    if(!confirm('确认你已经在现实中达成「'+story.goal+'」？此确认不自动发放 XP。'))return;
+    state.storylineWins[id]={at:new Date().toISOString()};
+  }
+  if(save()){render();notify('长期主线状态已更新')}return;
+ }
  if(action==='contract-toggle'){
   if(window.GamingLifeCloud?.status().mode==='cloud'&&!window.GamingLifeCloud.status().canEdit)return notify('云端暂不可编辑');
   const t=taskById(id);if(!t||t.kind!=='main'||t.repeat!=='daily')return;
@@ -529,7 +542,7 @@ function clickHandler(e){const btn=e.target.closest('button[data-action]');if(!b
  if(action==='excuse-day'){
   if(window.GamingLifeCloud?.status().mode==='cloud'&&!window.GamingLifeCloud.status().canEdit)return notify('云端暂不可编辑');
   const t=taskById(id),date=btn.dataset.date;
-  if(!t||! /^\\d{4}-\\d{2}-\\d{2}$/.test(date)||!missedContractDays(t).includes(date))return notify('这一天没有待处理的缺勤');
+  if(!t||! /^\d{4}-\d{2}-\d{2}$/.test(date)||!missedContractDays(t).includes(date))return notify('这一天没有待处理的缺勤');
   const reason=prompt('这天是什么情况？可写：生病、工作冲突、已完成但忘记记录（仅用于请假，不补发 XP）','临时情况');
   if(reason===null)return;
   state.excusedDays[t.id+'|'+date]={at:new Date().toISOString(),reason:String(reason).slice(0,100)};
