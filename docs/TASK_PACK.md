@@ -44,3 +44,36 @@ V1.4 未改变原有 `gaming-life.quest-pack` `version:1` 的 JSON 格式。任�
 内置求职任务包使用固定 `packId: career-applications-202610`、`focusId: first-three-applications`，含简历核对、八个目标岗位、首批三份真实投递、后续每周五份投递。先预览确认；重复导入幂等，不视为已投递。
 
 具体规则见 [`PROGRESS.md`](PROGRESS.md)。
+
+## V1.7 可选长期主线协议（仍为 version:1）
+
+原任务包格式完全兼容。新增可选顶层 `storyline`，其 `chapters` 定义完整长期目标中的章节；每条任务可填 `chapterId` 与 `targetCount`（1–100，默认创建时1）。`targetCount` 表示该任务累计完成多少次后章节步骤达标。章节进度从历史完成事件计算，不由导入器预置完成状态或伪造日期。
+
+```json
+{
+  "format":"gaming-life.quest-pack",
+  "version":1,
+  "packId":"job-search-chapter-2026",
+  "title":"求职冒险章节",
+  "focusId":"send-applications",
+  "storyline":{
+    "id":"job-search-2026",
+    "title":"职业启程",
+    "goal":"取得一份适合自己的真实工作机会",
+    "chapters":[
+      {"id":"resume","title":"第一章 · 整备装备","goal":"简历符合实际岗位要求"},
+      {"id":"apply","title":"第二章 · 开始投递","goal":"完成真实有效的岗位申请"}
+    ]
+  },
+  "quests":[
+    {"id":"resume-ready","title":"核对并定稿简历","kind":"side","area":"career","repeat":"once","chapterId":"resume","targetCount":1,"xp":25,"coins":12},
+    {"id":"send-applications","title":"完成一次真实岗位投递","kind":"main","area":"career","repeat":"daily","chapterId":"apply","targetCount":10,"xp":30,"coins":15}
+  ]
+}
+```
+
+- `storyline.id`、`chapter.id` 为稳定的字母数字连字符 ID；一个主线最多12章；`storyline.goal` 必须明确，最长250字。章节目标与任务描述可选。
+- `quest.chapterId` 必须属于本包 `storyline.chapters`；旧包不填则保持旧版使用方式。重复导入原有任务包会保留此前记录过的累计目标。
+- 任务首次导入/手动创建才记录 `publishedAt`；再次导入记录 `updatedAt`，不会用新版发布日期冒充旧版任务最初发布时间。旧任务可能显示“日期未知”。
+- **任务包不能激活强制契约**。只有玩家在页面内为“主线 + 每日”任务主动选择开启，才从当天开始计算；漏做仅影响近7天纪律值（每次−4，最低70），可请假，不回溯启用前的历史。
+- 章节做满还不能自动宣称拿到 offer/完成毕业等现实目标；最终达成须由玩家单独确认。
