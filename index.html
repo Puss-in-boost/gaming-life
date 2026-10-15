@@ -400,11 +400,11 @@ function stateSnapshot(){
  const recent=state.events.filter(e=>e.date>=cutoff).sort((a,b)=>b.at.localeCompare(a.at)).slice(0,40);
  const main=getMain(),side=currentSides(),xp=totalXP(),l=levelInfo(xp);
  return {format:'gaming-life.state-snapshot',version:1,capturedAt:new Date().toISOString(),localDate:today(),totalXP:xp,level:l.level,remainingToNextLevel:l.need-l.earned,
-  rewardBalance:coinBalance(),rewardBudgetMonthlyRmb:monthlyBudget(),rewardBudgetRemainingRmb:availableRmb(),rewardRedemptions:state.redemptions.slice(-15).map(r=>({title:r.title,price:r.price,status:r.status})),currentMain:main?{id:main.id,title:main.title,status:questStatus(main),progressNote:progressFor(main).note,done:taskCompleted(main),xp:main.xp,detail:main.detail}:null,
+  rewardBalance:coinBalance(),rewardBudgetMonthlyRmb:monthlyBudget(),rewardBudgetRemainingRmb:availableRmb(),disciplineHonor:honorStats().value,storylines:(state.storylines||[]).map(a=>({id:a.id,title:a.title,goal:a.goal,completionPercent:Math.round(storylineStats(a).rate*100),chapters:storylineStats(a).chapters.map(c=>({title:c.chapter.title,percent:Math.round(c.rate*100),completedSteps:c.done,totalSteps:c.total}))})),rewardRedemptions:state.redemptions.slice(-15).map(r=>({title:r.title,price:r.price,status:r.status})),currentMain:main?{id:main.id,title:main.title,status:questStatus(main),progressNote:progressFor(main).note,done:taskCompleted(main),xp:main.xp,detail:main.detail}:null,
   secondaryMain:(()=>{const t=secondaryMain();return t?{id:t.id,title:t.title,status:questStatus(t),progressNote:progressFor(t).note,done:taskCompleted(t)}:null})(),
   recentProgress:(state.progressHistory||[]).slice(-12).map(p=>({title:p.title,status:statusLabel(p.status),note:p.note,date:p.date})),
   todaySides:side.map(t=>({id:t.id,title:t.title,done:taskCompleted(t),xp:t.xp})),
-  activeTasks:activeTasks().slice(0,100).map(t=>({id:t.id,packKey:t.packKey||null,title:t.title,detail:t.detail,kind:t.kind,area:t.area,repeat:t.repeat,xp:t.xp,coins:coinsForTask(t),status:questStatus(t),progressNote:progressFor(t).note})),
+  activeTasks:activeTasks().slice(0,100).map(t=>({id:t.id,packKey:t.packKey||null,title:t.title,detail:t.detail,kind:t.kind,area:t.area,repeat:t.repeat,xp:t.xp,coins:coinsForTask(t),status:questStatus(t),progressNote:progressFor(t).note,sourceLabel:t.sourceLabel||null,publishedAt:t.publishedAt||null,storylineId:t.storylineId||null,chapterId:t.chapterId||null,targetCount:missionGoal(t),completedCount:missionCount(t),strictDaily:!!t.strictDaily})),
   recentCompleted:recent.map(e=>({title:e.title,date:e.date,xp:e.xp,area:e.area})),
   milestoneStatus:MILESTONES.map(m=>({title:m.title,complete:!!state.milestones[m.id]}))};
 }
@@ -480,7 +480,7 @@ function matchText(raw){const rules=[['thesis',/(论文|盲审|正文|改了第.
 function downloadBackup(){const blob=new Blob([JSON.stringify({...state,exportedAt:new Date().toISOString()},null,2)],{type:'application/json'});const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=`GamingLife-backup-${today()}.json`;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),800);notify('备份已导出，请妥善保存')}
 function inputHandler(e){if(e.target?.id==='import-file'&&window.GamingLifeCloud?.status().mode==='cloud'&&!window.GamingLifeCloud.status().canEdit){notify('云端暂不可编辑，请先登录同步');return}if(e.target?.id==='import-file'&&e.target.files?.[0]){const file=e.target.files[0];if(file.size>2_000_000){notify('备份过大，请确认文件是否正确');return}const reader=new FileReader();reader.onload=()=>{try{const v=JSON.parse(reader.result);if(v.version!==1||!Array.isArray(v.tasks)||!Array.isArray(v.events)||!Array.isArray(v.notes)||('rewards' in v&&!Array.isArray(v.rewards))||('redemptions' in v&&!Array.isArray(v.redemptions)))throw new Error('format');if(!confirm('导入将替换此浏览器当前所有 Gaming Life 记录。请确认已备份原数据。'))return;state=migrate(v);save();render();notify('备份导入完成')}catch(err){notify('文件格式不正确，未修改当前记录')}};reader.readAsText(file)}}
 function submitHandler(e){
- if(['progress-form','reward-budget-form','pack-form','reward-create-form','create-form','side-form','capture-form'].includes(e.target?.id)&&window.GamingLifeCloud?.status().mode==='cloud'&&!window.GamingLifeCloud.status().canEdit){e.preventDefault();notify('云端同步未就绪；请先连接并完成保存');return}
+ if(['progress-form','reward-budget-form','pack-form','reward-create-form','create-form','story-create-form','side-form','capture-form'].includes(e.target?.id)&&window.GamingLifeCloud?.status().mode==='cloud'&&!window.GamingLifeCloud.status().canEdit){e.preventDefault();notify('云端同步未就绪；请先连接并完成保存');return}
  if(e.target?.id==='cloud-config-form'){e.preventDefault();const f=new FormData(e.target);cloudAction(()=>window.GamingLifeCloud.configure(f.get('url'),f.get('key')));return}
  if(e.target?.id==='cloud-auth-form'){e.preventDefault();const f=new FormData(e.target);cloudAction(()=>window.GamingLifeCloud.login(f.get('email'),f.get('password')));return}
 if(e.target?.id==='progress-form'){
@@ -491,8 +491,50 @@ if(e.target?.id==='progress-form'){
  return;
  }
 if(e.target?.id==='reward-budget-form'){e.preventDefault();const b=Number(new FormData(e.target).get('budget'));if(!Number.isInteger(b)||b<0||b>300){notify('请输入0到300元之间的整数');return}if(b<committedRmb()){notify('预算不能低于本月已预留金额；可先取消未兑现奖励');return}state.monthlyRewardBudgetRmb=b;if(save()){render();notify('本月奖励预算已更新')}return}if(e.target?.id==='pack-form'){e.preventDefault();try{validatedPack=checkPack(String(new FormData(e.target).get('pack-json')||''));const raw=e.target.querySelector('#pack-json').value;render();const input=el('pack-json');if(input)input.value=raw;notify('任务包检查通过，请确认导入');}catch(err){validatedPack=null;notify(err.message||'任务包格式不正确')}return}if(e.target?.id==='reward-create-form'){e.preventDefault();const form=new FormData(e.target);const title=String(form.get('title')||'').trim(),detail=String(form.get('detail')||'').trim(),price=Number(form.get('price')),rmb=Number(form.get('rmb')); if(!title||title.length>40||detail.length>180||!Number.isInteger(price)||price<1||price>2000||!Number.isInteger(rmb)||rmb<0||rmb>300){notify('请输入有效的奖励名称与1–1000枚金币的价格');return}const icon=String(form.get('icon')||'🎁');if(!['🎁','🎮','🍰','🎬','🧭','🏸','☕','🎨'].includes(icon))return notify('奖励图标无效');state.rewards.push({id:uid(),title,detail,price,rmb,category:rmb?'低预算':'免费体验',icon,active:true});if(save()){modal='';navigate('rewards');notify('新奖励已加入商店')}return}
-if(e.target?.id==='create-form'){e.preventDefault();const f=new FormData(e.target);const title=String(f.get('title')||'').trim();if(!title)return;const kind=f.get('kind')==='main'?'main':'side',xp=Number(f.get('xp'))||15,area=String(f.get('area')||'career');let task={id:uid(),title,coins:kind==='main'?Math.round(xp/2):Math.round(xp/2),detail:String(f.get('detail')||'').trim(),kind,area,xp,repeat:['once','daily','weekly'].includes(f.get('repeat'))?f.get('repeat'):'once',icon:areaInfo(area)[2],active:true};state.tasks.push(task);if(kind==='main'){const previous=getMain();if(previous&&previous.id!==task.id)state.secondaryMainId=previous.id;state.mainId=task.id;}save();modal='';render();notify('已创建新任务');return}if(e.target?.id==='side-form'){e.preventDefault();const ids=[...new FormData(e.target).getAll('side')].slice(0,2);state.sideChoice[today()]=ids;save();modal='';render();notify('今日支线已更新');return}if(e.target?.id==='capture-form'){e.preventDefault();const ids=[...new FormData(e.target).getAll('matched')];const content=pendingText;state.notes.push({id:uid(),text:content,date:today(),at:new Date().toISOString()});let n=0;for(const id of ids){const t=taskById(id);if(t&&!taskCompleted(t)){state.events.push({id:uid(),taskId:t.id,title:t.title,xp:t.xp,coins:awardCoins(t),area:t.area,kind:t.kind,date:today(),at:new Date().toISOString(),note:content});n++}}save();modal='';pendingText='';pendingIds=[];render();notify(n?`已记录 ${n} 项任务，奖励已发放到冒险币余额`:'已保存今天的日志');return}}
+if(e.target?.id==='story-create-form'){
+ e.preventDefault();const f=new FormData(e.target),title=String(f.get('title')||'').trim(),goal=String(f.get('goal')||'').trim();
+ const names=String(f.get('chapters')||'').split(/\r?\n/).map(x=>x.trim()).filter(Boolean);
+ if(!title||title.length>70||!goal||goal.length>250||names.length<1||names.length>8||names.some(x=>x.length>80)||new Set(names).size!==names.length){notify('请填写主线、最终目标与1–8个不同章节');return}
+ const id='story-'+uid().replace(/[^a-zA-Z0-9_-]/g,'');
+ state.storylines.push({id,title,goal,source:'玩家创建',createdAt:new Date().toISOString(),chapters:names.map((name,i)=>({id:'chapter-'+(i+1),title:name,goal:''}))});
+ if(save()){modal='';navigate('journey');notify('新主线已建立，接下来可以把任务关联到章节')}return;
+}
+if(e.target?.id==='create-form'){
+ e.preventDefault();const f=new FormData(e.target),title=String(f.get('title')||'').trim();
+ if(!title)return;
+ const kind=f.get('kind')==='main'?'main':'side',xp=Number(f.get('xp'))||15,area=String(f.get('area')||'career'),repeat=['once','daily','weekly'].includes(f.get('repeat'))?f.get('repeat'):'once';
+ const targetCount=Number(f.get('targetCount')||1);
+ const chapterKey=String(f.get('chapterKey')||''),[storylineId,chapterId]=chapterKey?chapterKey.split('|'):[null,null];
+ if(!Number.isInteger(targetCount)||targetCount<1||targetCount>100||chapterKey&&(!storyFor(storylineId)?.chapters?.some(c=>c.id===chapterId))){notify('请选择有效章节和1–100次累计目标');return}
+ const now=new Date().toISOString();
+ const task={id:uid(),title,coins:Math.round(xp/2),detail:String(f.get('detail')||'').trim(),kind,area,xp,repeat,icon:areaInfo(area)[2],active:true,
+   storylineId:storylineId||null,chapterId:chapterId||null,targetCount,sourceLabel:'玩家手动发布',publishedAt:now,updatedAt:now,strictDaily:false};
+ state.tasks.push(task);
+ if(kind==='main'){const previous=getMain();if(previous&&previous.id!==task.id)state.secondaryMainId=previous.id;state.mainId=task.id;}
+ if(save()){modal='';render();notify('新任务已发布 · '+today())}return;
+}
+if(e.target?.id==='side-form'){e.preventDefault();const ids=[...new FormData(e.target).getAll('side')].slice(0,2);state.sideChoice[today()]=ids;save();modal='';render();notify('今日支线已更新');return}if(e.target?.id==='capture-form'){e.preventDefault();const ids=[...new FormData(e.target).getAll('matched')];const content=pendingText;state.notes.push({id:uid(),text:content,date:today(),at:new Date().toISOString()});let n=0;for(const id of ids){const t=taskById(id);if(t&&!taskCompleted(t)){state.events.push({id:uid(),taskId:t.id,title:t.title,xp:t.xp,coins:awardCoins(t),area:t.area,kind:t.kind,date:today(),at:new Date().toISOString(),note:content});n++}}save();modal='';pendingText='';pendingIds=[];render();notify(n?`已记录 ${n} 项任务，奖励已发放到冒险币余额`:'已保存今天的日志');return}}
 function clickHandler(e){const btn=e.target.closest('button[data-action]');if(!btn)return;const action=btn.dataset.action,id=btn.dataset.id;if(action==='nav')return navigate(btn.dataset.screen);
+ if(action==='open-character'){modal='character';render();return}
+ if(action==='open-story-create'){modal='story-create';render();return}
+ if(action==='quest-detail'){progressTaskId=id;modal='quest-detail';render();return}
+ if(action==='open-contract'){progressTaskId=id;modal='contract';render();return}
+ if(action==='contract-toggle'){
+  if(window.GamingLifeCloud?.status().mode==='cloud'&&!window.GamingLifeCloud.status().canEdit)return notify('云端暂不可编辑');
+  const t=taskById(id);if(!t||t.kind!=='main'||t.repeat!=='daily')return;
+  if(t.strictDaily){if(!confirm('停止此后的每日考核？现有 XP 和金币不会变化。'))return;t.strictDaily=false;t.strictSince=null;}
+  else{if(!confirm('确认自愿签订每日主线契约？从今天开始，仅统计未来漏做日，每次 -4 纪律值。请假可豁免，不扣 XP 和金币。'))return;t.strictDaily=true;t.strictSince=today();}
+  t.updatedAt=new Date().toISOString();if(save()){render();notify(t.strictDaily?'每日契约从今天开始生效':'未来每日考核已停止')}return;
+ }
+ if(action==='excuse-day'){
+  if(window.GamingLifeCloud?.status().mode==='cloud'&&!window.GamingLifeCloud.status().canEdit)return notify('云端暂不可编辑');
+  const t=taskById(id),date=btn.dataset.date;
+  if(!t||! /^\\d{4}-\\d{2}-\\d{2}$/.test(date)||!missedContractDays(t).includes(date))return notify('这一天没有待处理的缺勤');
+  const reason=prompt('这天是什么情况？可写：生病、工作冲突、已完成但忘记记录（仅用于请假，不补发 XP）','临时情况');
+  if(reason===null)return;
+  state.excusedDays[t.id+'|'+date]={at:new Date().toISOString(),reason:String(reason).slice(0,100)};
+  if(save()){render();notify('已登记豁免 · 纪律值重新计算')}return;
+ }
  if(action==='cloud-accept-latest'){if(!confirm('这将丢弃当前页面尚未上传的修改，以云端最新版本为准。可以先在设置中手动导出 JSON 备份。确定继续？'))return;cloudAction(()=>window.GamingLifeCloud.choose('cloud'));return}
  if(action==='cloud-mode-on'){
   if(!confirm('切换到云端优先将使用 Supabase 的存档，并清除本设备 IndexedDB、localStorage 的完整游戏记录及旧本机备份（不会自动下载文件）。确认此前的本地进展都已同步，或已自行导出需要保留的备份？'))return;
