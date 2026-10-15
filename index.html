@@ -381,7 +381,7 @@ function storylineStats(story){
  const completedChapters=cs.filter(c=>c.rate===1).length;
  const stageRate=cs.length?cs.reduce((n,c)=>n+c.rate,0)/cs.length:0;
  const finalReached=!!state.storylineWins?.[story.id];
- return {chapters:cs,stageRate,finalReached,rate:stageRate*.9+(finalReached?.1:0),
+ return {chapters:cs,stageRate,finalReached,rate:stageRate*0.9+(finalReached?0.1:0),
    done:completedChapters,total:cs.length};
 }
 function dateOffset(days){
@@ -414,7 +414,7 @@ function questOrigin(t){
 function storylineCards(){
  return (state.storylines||[]).map(story=>{
    const stat=storylineStats(story),pct=Math.round(stat.rate*100);
-   return `<section class="panel story-panel"><div class="section-head"><div><h2>📖 ${safe(story.title)}</h2><p>最终目标：${safe(story.goal)}</p></div><span class="xp-pill">${pct}%</span></div><div class="progress" role="progressbar" aria-label="${safe(story.title)}主线进度" aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100"><span style="width:${pct}%"></span></div><p class="hint">${stat.done}/${stat.total} 个章节达标 · ${safe(story.source||'用户创建')}${stat.finalReached?' · 最终目标已确认':' · 最终目标待确认'}</p><div class="data-actions"><button class="btn btn-small ${stat.stageRate<1?'btn-ghost':''}" data-action="storyline-win" data-id="${safe(story.id)}" ${stat.stageRate<1?'disabled title="请先完成全部章节"':''}>${stat.finalReached?'↶ 撤销终极达成':'🏆 确认最终目标达成'}</button></div>${stat.chapters.map(c=>{
+   return `<section class="panel story-panel"><div class="section-head"><div><h2>📖 ${safe(story.title)}</h2><p>最终目标：${safe(story.goal)}</p></div><span class="xp-pill">${pct}%</span></div><div class="progress" role="progressbar" aria-label="${safe(story.title)}主线进度" aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100"><span style="width:${pct}%"></span></div><p class="hint">${stat.done}/${stat.total} 个章节达标 · ${safe(story.source||'用户创建')}${stat.finalReached?' · 最终目标已确认':' · 最终目标待确认'}</p><div class="data-actions"><button class="btn btn-small ${stat.stageRate<1?'btn-ghost':''}" data-action="storyline-win" data-id="${safe(story.id)}" ${stat.stageRate<1&&!stat.finalReached?'disabled title="请先完成全部章节"':''}>${stat.finalReached?'↶ 撤销终极达成':'🏆 确认最终目标达成'}</button></div>${stat.chapters.map(c=>{
     const cpct=Math.round(c.rate*100);
     return `<details class="compact-log"><summary>${safe(c.chapter.title)} · ${cpct}%（${c.done}/${c.total}）</summary><p class="hint">${safe(c.chapter.goal||'完成本章节对应步骤')}</p><div class="progress"><span style="width:${cpct}%"></span></div>${c.steps.map(t=>`<div class="activity"><div class="activity-main"><strong>${safe(t.title)}</strong><small>${missionCount(t)}/${missionGoal(t)} 次 · ${safe(questOrigin(t))}</small></div><button class="btn btn-small btn-ghost" data-action="quest-detail" data-id="${safe(t.id)}">详情</button></div>`).join('')||'<p class="hint">尚未分配任务。创建任务时可选择此章节。</p>'}</details>`;
    }).join('')}</section>`;
