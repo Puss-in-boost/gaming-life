@@ -16,7 +16,7 @@ function extract(start,end){
 }
 
 const state={
- storylines:[{id:'arc',title:'求职',goal:'拿到 offer',chapters:[{id:'resume',title:'简历',goal:''},{id:'apply',title:'投递',goal:''}]}],
+ storylines:[{id:'arc',title:'示例冒险',goal:'达成最终目标',chapters:[{id:'resume',title:'第一步',goal:''},{id:'apply',title:'第二步',goal:''}]}],
  storylineWins:{},excusedDays:{},
  tasks:[
   {id:'resume',kind:'main',repeat:'once',storylineId:'arc',chapterId:'resume',targetCount:1,active:true,publishedAt:null,sourceLabel:'旧版任务'},
@@ -84,7 +84,7 @@ const migrateCtx=vm.createContext({
  structuredClone
 });
 vm.runInContext(extract('function migrate(v)','function load()'),migrateCtx);
-const old={version:1,rewardEconomyVersion:2,tasks:[{id:'legacy',title:'旧论文任务',kind:'main',repeat:'daily',xp:50}],events:[],notes:[]};
+const old={version:1,rewardEconomyVersion:2,privatePacksVersion:1,privatePacks:[],tasks:[{id:'legacy',title:'旧任务',kind:'main',repeat:'daily',xp:50}],events:[],notes:[]};
 const migrated=migrateCtx.migrate(old);
 assert.equal(migrated.tasks[0].publishedAt,null);
 assert.equal(migrated.tasks[0].targetCount,12);
