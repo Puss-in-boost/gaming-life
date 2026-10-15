@@ -78,4 +78,25 @@ store.privatePacks=[];
 assert.equal(store.tasks.length,1,'forgetting pack definition must not delete tasks');
 assert.equal(store.events.length,1,'forgetting pack definition must not delete XP history');
 
+
+const ui=vm.createContext({
+ state:{
+  milestones:{'archived-achievement':{xp:120,coins:33,date:'2026-10-09',at:'2026-10-09T11:00:00Z'}},
+  events:[],privatePacks:[{packId:'example-test',title:'仅玩家可见的任务包',origin:'已确认导入',createdAt:'2026-10-10',payload:imported}]
+ },
+ MILESTONES:[{id:'public-generic',title:'普通成就',desc:'一个通用示例',xp:30}],
+ AREAS:[['learning','认知','📚']],totalXP:()=>120,
+ storylineCards:()=>'',safe:x=>String(x)
+});
+vm.runInContext(extract('function journeyView()','function historyView()'),ui);
+const journey=ui.journeyView();
+assert.match(journey,/旧版里程碑/);
+assert.match(journey,/archived-achievement/);
+assert.match(journey,/legacy-milestone-revoke/);
+vm.runInContext(extract('function privatePackById(packId)','function storyFor(id)'),ui);
+const library=ui.privatePackLibrary();
+assert.match(library,/私人任务包库/);
+assert.match(library,/仅玩家可见的任务包/);
+assert.match(library,/private-pack-forget/);
+
 console.log('V1.8 privacy, task provenance, migration, idempotent private packs, no-loss: PASS');
