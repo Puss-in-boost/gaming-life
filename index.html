@@ -19,7 +19,37 @@
     .reward-teaser{display:flex;align-items:center;gap:13px;padding:13px 16px;margin-top:15px;background:linear-gradient(110deg,#302b35,#263a45);border:1px solid #665842;border-radius:17px}.reward-teaser-icon{display:grid;place-items:center;background:#614d39;width:42px;height:42px;border-radius:13px;font-size:23px;flex:0 0 42px}.reward-teaser>div:nth-child(2){flex:1;min-width:0}.reward-teaser strong,.reward-teaser span{display:block}.reward-teaser strong{font-size:14px}.reward-teaser span{color:#ded1bb;font-size:12px;margin-top:3px}.reward-wallet{display:flex;align-items:center;justify-content:space-between;gap:16px;border-radius:22px;border:1px solid #7f6848;background:linear-gradient(135deg,#453827,#202b3d);padding:22px;margin:10px 0 14px}.reward-wallet>div:first-child{display:grid;gap:5px}.reward-label{color:#dbbd8e;font-size:12px;letter-spacing:1px;font-weight:800}.wallet-amount{font-size:36px;line-height:1.25;color:var(--gold)}.reward-wallet-right{display:grid;gap:8px;text-align:right;color:#d7bf9a;font-size:12px}.reward-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px}.reward-card{display:flex;gap:13px;padding:18px;background:var(--surface);border:1px solid #4a4755;border-radius:18px;min-width:0}.reward-icon{font-size:27px;background:#332f46;display:grid;place-items:center;flex:0 0 52px;width:52px;height:52px;border-radius:15px}.reward-content{display:grid;flex:1;min-width:0}.reward-content h3{font-size:15px;margin:0 0 6px}.reward-content p{font-size:12px;color:var(--muted);margin:0 0 14px}.reward-card-bottom{display:flex;align-items:center;justify-content:space-between;gap:10px}.reward-card-bottom strong{color:var(--gold);white-space:nowrap}.reward-bag-actions{display:flex;gap:6px;align-items:center;flex-wrap:wrap}.reward-disabled{opacity:.45}.achievement-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.achievement{display:flex;flex-direction:column;align-items:center;gap:5px;text-align:center;border:1px solid #46556e;background:#222b3f;padding:18px 11px;border-radius:15px}.achievement-icon{font-size:28px}.achievement strong{font-size:13px}.achievement small{font-size:11px;color:#bbc5d6}.achievement.locked{opacity:.55;filter:grayscale(.45)}
     @media(max-width:850px){.reward-grid{grid-template-columns:1fr}}
     @media(max-width:680px){.reward-teaser{flex-wrap:wrap}.reward-teaser .btn{width:100%}.reward-wallet{align-items:flex-start;flex-direction:column}.reward-wallet-right{text-align:left}.achievement-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.reward-card{padding:14px}.reward-card-bottom{flex-wrap:wrap}.reward-card-bottom .btn{flex:1}.reward-bag-actions{flex-wrap:wrap}}
-  </style>
+  
+/* V1.7 · long-running story chapters and character HUD */
+.hero-top{flex-wrap:wrap}
+.hero-top [data-action="open-character"]{margin-left:auto;align-self:flex-start}
+.story-teaser{margin:12px 0 16px}
+.story-teaser p{font-size:13px;color:var(--muted);margin:8px 0 13px}
+.story-teaser .hint{margin:8px 0 0}
+.story-panel{margin:14px 0}
+.story-panel .section-head{margin-top:0}
+.story-panel .section-head p{max-width:650px}
+.story-panel .compact-log{margin:12px 0}
+.story-panel .activity{gap:8px}
+.story-panel .activity small{display:block;line-height:1.5}
+.quest-origin{font-size:11px;opacity:.75}
+.quest-copy>.progress{max-width:420px;margin:8px 0}
+.character-sheet .sheet-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:20px}
+.character-sheet .sheet-stats>div{border:1px solid var(--stroke);border-radius:12px;padding:14px 8px;text-align:center}
+.character-sheet .sheet-stats strong{display:block;font-size:19px}
+.character-sheet .sheet-stats small{font-size:11px;color:var(--muted)}
+.character-sheet .domain{margin:12px 0}
+.modal-wide{max-width:720px}
+@media(max-width:580px){
+ .character-sheet .sheet-stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .character-sheet .domain{grid-template-columns:92px minmax(0,1fr) 36px;gap:8px;font-size:11px}
+ .story-panel .section-head{flex-wrap:wrap}
+ .story-panel .activity{align-items:flex-start}
+ .story-panel .activity .btn{flex-shrink:0}
+ .hero-top [data-action="open-character"]{margin-left:0}
+}
+
+</style>
   <link rel="manifest" href="./manifest.webmanifest" />
 <style>
  .quest-actions{display:flex;gap:8px;align-items:center;justify-content:flex-end;flex-wrap:wrap;flex-shrink:0}
@@ -85,11 +115,38 @@ const DEFAULT_REWARDS=[
  {id:'good-meal',icon:'🍜',title:'认真犒劳自己一餐',detail:'特别期待的一顿平价美食，参考预算25元（不是额外日常饭钱）。',price:95,rmb:25,category:'低预算',active:true},
  {id:'movie-out',icon:'🍿',title:'简单线下娱乐活动',detail:'平价电影票、展览或活动，参考预算20元；活动真实价格优先。',price:110,rmb:20,category:'低预算',active:true}
 ];
-const DEFAULT=()=>({version:1,createdAt:new Date().toISOString(),tasks:structuredClone(DEFAULT_TASKS),events:[],notes:[],milestones:{},modes:{},sideChoice:{},mainId:'thesis',secondaryMainId:null,questProgress:{},progressHistory:[],rewards:structuredClone(DEFAULT_REWARDS),redemptions:[],legacyCoinCredit:0,rewardEconomyVersion:2,monthlyRewardBudgetRmb:30,equippedTitle:''});
+
+const STORY_PRESETS=[
+ {id:'graduation-arc',title:'毕业试炼',goal:'完成硕士论文修改、送审和毕业相关流程，以真实学校安排为准。',source:'内置规划',chapters:[{id:'revision',title:'第一章 · 论文定稿',goal:'完成可核实的论文修改和提交准备'},{id:'review',title:'第二章 · 送审与反馈',goal:'按学院流程完成审查及反馈处理'},{id:'finish',title:'第三章 · 毕业收官',goal:'完成真实答辩及毕业事项'}]},
+ {id:'career-arc',title:'职业启程',goal:'完成简历定稿、真实岗位投递并建立可持续的求职流程，最终获得适合的工作机会。',source:'内置规划',chapters:[{id:'resume',title:'第一章 · 整备装备',goal:'完成简历与岗位方向准备'},{id:'shortlist',title:'第二章 · 侦察岗位',goal:'筛选并核对合适的岗位'},{id:'apply',title:'第三章 · 正式出征',goal:'提交真实申请并持续跟进'}]}
+];
+const LEGACY_STORY_STEPS={
+ thesis:['graduation-arc','revision',12],
+ 'gaming-life-opening-202610:graduation-progress':['graduation-arc','revision',12],
+ 'career-applications-202610:resume-v1':['career-arc','resume',1],
+ 'career-applications-202610:position-shortlist':['career-arc','shortlist',1],
+ 'career-applications-202610:first-three-applications':['career-arc','apply',1],
+ 'career-applications-202610:weekly-five-applications':['career-arc','apply',4]
+};
+
+const DEFAULT=()=>({version:1,createdAt:new Date().toISOString(),tasks:structuredClone(DEFAULT_TASKS),storylines:structuredClone(STORY_PRESETS),storylineWins:{},excusedDays:{},events:[],notes:[],milestones:{},modes:{},sideChoice:{},mainId:'thesis',secondaryMainId:null,questProgress:{},progressHistory:[],rewards:structuredClone(DEFAULT_REWARDS),redemptions:[],legacyCoinCredit:0,rewardEconomyVersion:2,monthlyRewardBudgetRmb:30,equippedTitle:''});
 // Preserve the old 1 XP : 1 coin wallet and redemption history exactly once.
 // Existing claims are sealed as legacy; new claims earn independent coin rewards.
 function migrate(v){
  const base={...DEFAULT(),...v};
+ base.storylines=Array.isArray(v.storylines)?v.storylines:structuredClone(STORY_PRESETS);
+ base.storylineWins=v.storylineWins&&typeof v.storylineWins==='object'&&!Array.isArray(v.storylineWins)?v.storylineWins:{};
+ base.excusedDays=v.excusedDays&&typeof v.excusedDays==='object'&&!Array.isArray(v.excusedDays)?v.excusedDays:{};
+ base.tasks=(Array.isArray(v.tasks)?v.tasks:structuredClone(DEFAULT_TASKS)).map(t=>{
+   const inherited=LEGACY_STORY_STEPS[t.packKey||t.id];
+   return {...t,
+     storylineId:t.storylineId??(inherited?inherited[0]:null),
+     chapterId:t.chapterId??(inherited?inherited[1]:null),
+     targetCount:Number.isInteger(t.targetCount)&&t.targetCount>=1?t.targetCount:(inherited?inherited[2]:1),
+     publishedAt:t.publishedAt||null, updatedAt:t.updatedAt||null,
+     sourceLabel:t.sourceLabel||(t.packKey?'历史任务包':'历史任务 · 首发日期未记录')
+   };
+ });
  base.questProgress=v.questProgress&&typeof v.questProgress==='object'&&!Array.isArray(v.questProgress)?v.questProgress:{};
  base.progressHistory=Array.isArray(v.progressHistory)?v.progressHistory:[];
  if(v.rewardEconomyVersion===2){
@@ -226,6 +283,13 @@ const PERSONAL_STARTER_PACK={format:'gaming-life.quest-pack',version:1,packId:'g
 {id:'local-explore',title:'探索支线：发现一件生活小乐趣',detail:'尝试免费城市漫步、排球、喜欢的书或新的兴趣体验。',kind:'side',area:'explore',repeat:'weekly',xp:15,coins:8}
 ]};
 
+
+CAREER_SPRINT_PACK.storyline=structuredClone(STORY_PRESETS.find(a=>a.id==='career-arc'));
+for(const q of CAREER_SPRINT_PACK.quests){q.chapterId=({ 'resume-v1':'resume','position-shortlist':'shortlist','first-three-applications':'apply','weekly-five-applications':'apply'})[q.id];q.targetCount=q.id==='weekly-five-applications'?4:1}
+PERSONAL_STARTER_PACK.storyline=structuredClone(STORY_PRESETS.find(a=>a.id==='graduation-arc'));
+PERSONAL_STARTER_PACK.quests[0].chapterId='revision';
+PERSONAL_STARTER_PACK.quests[0].targetCount=12;
+
 function checkPack(raw){
  if(typeof raw!=='string'||raw.length>45000)throw Error('任务包文本过长（最多45KB）');
  let pack;try{pack=JSON.parse(raw)}catch(e){throw Error('不是有效的 JSON，请直接复制完整任务包')}
@@ -243,36 +307,137 @@ function checkPack(raw){
   if(typeof detail!=='string'||detail.length>250)throw Error(`任务 ${id} 的说明过长`);
   if(!['main','side'].includes(q.kind)||!AREAS.some(a=>a[0]===q.area)||!['once','daily','weekly'].includes(q.repeat))throw Error(`任务 ${id} 的类别/领域/周期无效`);
   if(!Number.isInteger(q.xp)||q.xp<5||q.xp>80)throw Error(`任务 ${id} 的 XP 应为5–80之间的整数`);if(q.coins!==undefined&&(!Number.isInteger(q.coins)||q.coins<0||q.coins>80))throw Error(`任务 ${id} 的奖励币应为0–80`);
-  normalized.push({id, title:title.trim(),detail:detail.trim(),kind:q.kind,area:q.area,repeat:q.repeat,xp:q.xp,coins:q.coins});
+  if(q.chapterId!==undefined&&(typeof q.chapterId!=='string'||! /^[a-zA-Z0-9_-]{1,60}$/.test(q.chapterId)))throw Error('chapterId 必须是章节 ID');
+  if(q.targetCount!==undefined&&(!Number.isInteger(q.targetCount)||q.targetCount<1||q.targetCount>100))throw Error('targetCount 必须为 1–100');
+  normalized.push({id, title:title.trim(),detail:detail.trim(),kind:q.kind,area:q.area,repeat:q.repeat,xp:q.xp,coins:q.coins,chapterId:q.chapterId??null,targetCount:q.targetCount??null});
  }
  if(pack.focusId!==undefined&&pack.focusId!==null&&(!used.has(pack.focusId)||normalized.find(q=>q.id===pack.focusId)?.kind!=='main'))throw Error('focusId 必须指向本任务包中的主线任务');
- return{packId:pack.packId,title:pack.title.trim(),quests:normalized,focusId:pack.focusId||null};
+ let story=null;
+ if(pack.storyline!==undefined){
+   const a=pack.storyline;
+   if(!a||typeof a!=='object'||Array.isArray(a)||typeof a.id!=='string'||! /^[a-zA-Z0-9_-]{1,60}$/.test(a.id)||
+      typeof a.title!=='string'||!a.title.trim()||a.title.length>80||typeof a.goal!=='string'||!a.goal.trim()||a.goal.length>250||
+      !Array.isArray(a.chapters)||a.chapters.length<1||a.chapters.length>12)throw Error('storyline 主线目标或章节无效');
+   const seen=new Set();
+   story={id:a.id,title:a.title.trim(),goal:a.goal.trim(),chapters:a.chapters.map(c=>{
+      if(!c||typeof c.id!=='string'||! /^[a-zA-Z0-9_-]{1,60}$/.test(c.id)||seen.has(c.id)||
+         typeof c.title!=='string'||!c.title.trim()||c.title.length>80||
+         (c.goal!==undefined&&(typeof c.goal!=='string'||c.goal.length>200)))throw Error('章节 ID、名称或目标无效');
+      seen.add(c.id);return{id:c.id,title:c.title.trim(),goal:String(c.goal||'').trim()};
+   })};
+ }
+ if(normalized.some(q=>q.chapterId&&(!story||!story.chapters.some(c=>c.id===q.chapterId))))throw Error('任务 chapterId 没有对应的 storyline 章节');
+ return{packId:pack.packId,title:pack.title.trim(),quests:normalized,focusId:pack.focusId||null,storyline:story};
 }
 function packKey(packId,id){return packId+':'+id}
 function packPreview(){if(!validatedPack)return '';const pack=validatedPack;let added=0,updated=0;const lines=pack.quests.map(q=>{const found=state.tasks.find(t=>t.packKey===packKey(pack.packId,q.id));found?updated++:added++;return `<div class="activity"><div class="activity-main"><strong>${safe(q.title)}</strong><small>${found?'更新已导入任务':'新增任务'} · ${q.kind==='main'?'主线':'支线'} · ${q.xp} XP · ${q.repeat==='daily'?'每天':q.repeat==='weekly'?'每周':'仅一次'}</small></div></div>`}).join('');return `<div class="pack-preview"><h3>「${safe(pack.title)}」预览</h3><p class="hint">新增 ${added} 项 · 更新 ${updated} 项；不会自动完成任务或改变既有 XP。</p>${lines}</div>`}
 function importPack(pack){
- // Commit is intentionally non-destructive: no activity/event records are changed or removed.
- let mainId=null;
- for(const q of pack.quests){const key=packKey(pack.packId,q.id);let t=state.tasks.find(t=>t.packKey===key);
-  if(t){Object.assign(t,{title:q.title,detail:q.detail,kind:q.kind,area:q.area,repeat:q.repeat,xp:q.xp,coins:q.coins===undefined?coinsForTask(q):q.coins,icon:areaInfo(q.area)[2],active:true});}
-  else{t={id:uid(),packKey:key,title:q.title,detail:q.detail,kind:q.kind,area:q.area,repeat:q.repeat,xp:q.xp,coins:q.coins===undefined?coinsForTask(q):q.coins,icon:areaInfo(q.area)[2],active:true};state.tasks.push(t)}
-  if(q.id===pack.focusId&&q.kind==='main')mainId=t.id;
+ // User-confirmed upsert only; never fabricate historic completion or publication dates.
+ const now=new Date().toISOString();
+ if(pack.storyline){
+   const old=storyFor(pack.storyline.id);
+   if(old){Object.assign(old,{title:pack.storyline.title,goal:pack.storyline.goal,chapters:pack.storyline.chapters,updatedAt:now});}
+   else state.storylines.push({...pack.storyline,source:'任务包：'+pack.title,createdAt:now,updatedAt:now});
  }
- if(mainId&&mainId!==state.mainId){const previous=taskById(state.mainId);if(previous&&previous.kind==='main'&&previous.active!==false)state.secondaryMainId=previous.id;state.mainId=mainId;}
- if(pack.packId===PERSONAL_STARTER_PACK.packId&&!Object.hasOwn(state.sideChoice,today()))state.sideChoice[today()]=state.tasks.filter(t=>t.packKey===pack.packId+':training-safe'||t.packKey===pack.packId+':sleep-transition').map(t=>t.id);
+ let mainId=null;
+ for(const q of pack.quests){
+   const key=packKey(pack.packId,q.id);
+   let t=state.tasks.find(item=>item.packKey===key);
+   const values={title:q.title,detail:q.detail,kind:q.kind,area:q.area,repeat:q.repeat,xp:q.xp,
+      coins:q.coins===undefined?coinsForTask(q):q.coins,icon:areaInfo(q.area)[2],active:true,
+      storylineId:pack.storyline?.id??t?.storylineId??null,
+      chapterId:q.chapterId??t?.chapterId??null,
+      targetCount:q.targetCount??t?.targetCount??1,
+      sourceLabel:t?.sourceLabel||'任务包：'+pack.title,updatedAt:now};
+   if(t){Object.assign(t,values)}
+   else{t={id:uid(),packKey:key,publishedAt:now,...values};state.tasks.push(t)}
+   if(q.id===pack.focusId&&q.kind==='main')mainId=t.id;
+ }
+ if(mainId&&mainId!==state.mainId){
+   const previous=taskById(state.mainId);
+   if(previous&&previous.kind==='main'&&previous.active!==false)state.secondaryMainId=previous.id;
+   state.mainId=mainId;
+ }
+ if(pack.packId===PERSONAL_STARTER_PACK.packId&&!Object.hasOwn(state.sideChoice,today()))
+    state.sideChoice[today()]=state.tasks.filter(t=>t.packKey===pack.packId+':training-safe'||t.packKey===pack.packId+':sleep-transition').map(t=>t.id);
  if(!save())return;
- validatedPack=null;modal='';navigate('today');notify(`任务包「${pack.title}」已导入，历史进度保留`);
+ validatedPack=null;modal='';navigate('today');notify('任务包「'+pack.title+'」已导入，任务来源与主线章节已经更新');
 }
+
+
+function storyFor(id){return (state.storylines||[]).find(x=>x.id===id)}
+function taskStory(t){return t.storylineId?storyFor(t.storylineId):null}
+function chapterFor(t){return taskStory(t)?.chapters?.find(c=>c.id===t.chapterId)||null}
+function missionCount(t){return state.events.filter(e=>e.taskId===t.id).length}
+function missionGoal(t){return Math.max(1,Math.min(100,Number(t.targetCount)||1))}
+function missionRatio(t){return Math.min(1,missionCount(t)/missionGoal(t))}
+function chapterStats(story,chapter){
+ const steps=state.tasks.filter(t=>t.storylineId===story.id&&t.chapterId===chapter.id);
+ if(!steps.length)return {steps,rate:0,done:0,total:0};
+ return {steps,rate:steps.reduce((n,t)=>n+missionRatio(t),0)/steps.length,done:steps.filter(t=>missionRatio(t)===1).length,total:steps.length};
+}
+function storylineStats(story){
+ const cs=(story.chapters||[]).map(c=>({...chapterStats(story,c),chapter:c}));
+ const completedChapters=cs.filter(c=>c.rate===1).length;
+ const stageRate=cs.length?cs.reduce((n,c)=>n+c.rate,0)/cs.length:0;
+ const finalReached=!!state.storylineWins?.[story.id];
+ return {chapters:cs,stageRate,finalReached,rate:stageRate*0.9+(finalReached?0.1:0),
+   done:completedChapters,total:cs.length};
+}
+function dateOffset(days){
+ const d=new Date(today()+'T12:00:00');d.setDate(d.getDate()+days);
+ return [d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-');
+}
+function missedContractDays(t){
+ if(!t.strictDaily||t.kind!=='main'||t.repeat!=='daily'||t.active===false||!t.strictSince)return [];
+ const end=today(),start=dateOffset(-7),first=t.strictSince>start?t.strictSince:start;
+ const missing=[];
+ for(let i=7;i>=1;i--){
+  const date=dateOffset(-i);
+  if(date<first||date>=end)continue;
+  if(state.events.some(e=>e.taskId===t.id&&e.date===date))continue;
+  if(state.excusedDays?.[t.id+'|'+date])continue;
+  missing.push(date);
+ }
+ return missing;
+}
+function honorStats(){
+ const duties=state.tasks.filter(t=>t.strictDaily&&t.kind==='main'&&t.repeat==='daily'&&t.active!==false);
+ const missed=duties.flatMap(t=>missedContractDays(t).map(date=>({task:t,date})));
+ return {value:Math.max(70,100-4*missed.length),missed,duties};
+}
+function questOrigin(t){
+ const created=t.publishedAt?humanDate(t.publishedAt.slice(0,10)):'旧版任务 · 发布日期未知';
+ const updated=t.updatedAt?' · 最近更新 '+humanDate(t.updatedAt.slice(0,10)):'';
+ return '发布：'+created+' · 来源：'+(t.sourceLabel||'未记录')+updated;
+}
+function storylineCards(){
+ return (state.storylines||[]).map(story=>{
+   const stat=storylineStats(story),pct=Math.round(stat.rate*100);
+   return `<section class="panel story-panel"><div class="section-head"><div><h2>📖 ${safe(story.title)}</h2><p>最终目标：${safe(story.goal)}</p></div><span class="xp-pill">${pct}%</span></div><div class="progress" role="progressbar" aria-label="${safe(story.title)}主线进度" aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100"><span style="width:${pct}%"></span></div><p class="hint">${stat.done}/${stat.total} 个章节达标 · ${safe(story.source||'用户创建')}${stat.finalReached?' · 最终目标已确认':' · 最终目标待确认'}</p><div class="data-actions"><button class="btn btn-small ${stat.stageRate<1?'btn-ghost':''}" data-action="storyline-win" data-id="${safe(story.id)}" ${stat.stageRate<1&&!stat.finalReached?'disabled title="请先完成全部章节"':''}>${stat.finalReached?'↶ 撤销终极达成':'🏆 确认最终目标达成'}</button></div>${stat.chapters.map(c=>{
+    const cpct=Math.round(c.rate*100);
+    return `<details class="compact-log"><summary>${safe(c.chapter.title)} · ${cpct}%（${c.done}/${c.total}）</summary><p class="hint">${safe(c.chapter.goal||'完成本章节对应步骤')}</p><div class="progress"><span style="width:${cpct}%"></span></div>${c.steps.map(t=>`<div class="activity"><div class="activity-main"><strong>${safe(t.title)}</strong><small>${missionCount(t)}/${missionGoal(t)} 次 · ${safe(questOrigin(t))}</small></div><button class="btn btn-small btn-ghost" data-action="quest-detail" data-id="${safe(t.id)}">详情</button></div>`).join('')||'<p class="hint">尚未分配任务。创建任务时可选择此章节。</p>'}</details>`;
+   }).join('')}</section>`;
+ }).join('');
+}
+function characterPanel(){
+ const xp=totalXP(),level=levelInfo(xp),honor=honorStats();
+ const domain=Object.fromEntries(AREAS.map(([id])=>[id,0]));
+ state.events.forEach(e=>{if(e.area in domain)domain[e.area]+=Number(e.xp)||0});
+ const max=Math.max(100,...Object.values(domain));
+ return `<div class="character-sheet"><div class="sheet-stats"><div><strong>LV.${level.level}</strong><small>冒险等级</small></div><div><strong>${xp} XP</strong><small>累计经验</small></div><div><strong>🪙 ${coinBalance()}</strong><small>奖励币</small></div><div><strong>${honor.value}/100</strong><small>近7日纪律值</small></div></div><div class="section-head"><h3>📜 主线进度</h3></div>${(state.storylines||[]).map(a=>{const p=Math.round(storylineStats(a).rate*100);return `<div class="domain"><span>${safe(a.title)}</span><div class="progress"><span style="width:${p}%"></span></div><strong>${p}%</strong></div>`}).join('')}<div class="section-head"><h3>🌱 六维成长</h3></div>${AREAS.map(([id,name,icon])=>`<div class="domain"><span>${icon} ${name}</span><div class="progress"><span style="width:${100*domain[id]/max}%"></span></div><strong>${domain[id]}</strong></div>`).join('')}<p class="hint">纪律值仅反映最近7天主动签订的每日契约；缺勤一天 -4，最低70。不扣经验、金币或现实奖励。成长领域是游戏记录，不是能力测评。</p>${honor.missed.length?`<div class="section-head"><h3>⏳ 待处理的每日契约</h3></div>${honor.missed.map(m=>`<div class="activity"><div class="activity-main"><strong>${safe(m.task.title)}</strong><small>${safe(m.date)} · 未完成（-4纪律值）</small></div><button class="btn btn-small" data-action="excuse-day" data-id="${safe(m.task.id)}" data-date="${m.date}">请假 / 纠正</button></div>`).join('')}`:''}</div>`;
+}
+
 function stateSnapshot(){
  const weekAgo=new Date();weekAgo.setDate(weekAgo.getDate()-7);const cutoff=weekAgo.toISOString().slice(0,10);
  const recent=state.events.filter(e=>e.date>=cutoff).sort((a,b)=>b.at.localeCompare(a.at)).slice(0,40);
  const main=getMain(),side=currentSides(),xp=totalXP(),l=levelInfo(xp);
  return {format:'gaming-life.state-snapshot',version:1,capturedAt:new Date().toISOString(),localDate:today(),totalXP:xp,level:l.level,remainingToNextLevel:l.need-l.earned,
-  rewardBalance:coinBalance(),rewardBudgetMonthlyRmb:monthlyBudget(),rewardBudgetRemainingRmb:availableRmb(),rewardRedemptions:state.redemptions.slice(-15).map(r=>({title:r.title,price:r.price,status:r.status})),currentMain:main?{id:main.id,title:main.title,status:questStatus(main),progressNote:progressFor(main).note,done:taskCompleted(main),xp:main.xp,detail:main.detail}:null,
+  rewardBalance:coinBalance(),rewardBudgetMonthlyRmb:monthlyBudget(),rewardBudgetRemainingRmb:availableRmb(),disciplineHonor:honorStats().value,storylines:(state.storylines||[]).map(a=>({id:a.id,title:a.title,goal:a.goal,completionPercent:Math.round(storylineStats(a).rate*100),chapters:storylineStats(a).chapters.map(c=>({title:c.chapter.title,percent:Math.round(c.rate*100),completedSteps:c.done,totalSteps:c.total}))})),rewardRedemptions:state.redemptions.slice(-15).map(r=>({title:r.title,price:r.price,status:r.status})),currentMain:main?{id:main.id,title:main.title,status:questStatus(main),progressNote:progressFor(main).note,done:taskCompleted(main),xp:main.xp,detail:main.detail}:null,
   secondaryMain:(()=>{const t=secondaryMain();return t?{id:t.id,title:t.title,status:questStatus(t),progressNote:progressFor(t).note,done:taskCompleted(t)}:null})(),
   recentProgress:(state.progressHistory||[]).slice(-12).map(p=>({title:p.title,status:statusLabel(p.status),note:p.note,date:p.date})),
   todaySides:side.map(t=>({id:t.id,title:t.title,done:taskCompleted(t),xp:t.xp})),
-  activeTasks:activeTasks().slice(0,100).map(t=>({id:t.id,packKey:t.packKey||null,title:t.title,detail:t.detail,kind:t.kind,area:t.area,repeat:t.repeat,xp:t.xp,coins:coinsForTask(t),status:questStatus(t),progressNote:progressFor(t).note})),
+  activeTasks:activeTasks().slice(0,100).map(t=>({id:t.id,packKey:t.packKey||null,title:t.title,detail:t.detail,kind:t.kind,area:t.area,repeat:t.repeat,xp:t.xp,coins:coinsForTask(t),status:questStatus(t),progressNote:progressFor(t).note,sourceLabel:t.sourceLabel||null,publishedAt:t.publishedAt||null,storylineId:t.storylineId||null,chapterId:t.chapterId||null,targetCount:missionGoal(t),completedCount:missionCount(t),strictDaily:!!t.strictDaily})),
   recentCompleted:recent.map(e=>({title:e.title,date:e.date,xp:e.xp,area:e.area})),
   milestoneStatus:MILESTONES.map(m=>({title:m.title,complete:!!state.milestones[m.id]}))};
 }
@@ -290,13 +455,18 @@ function render(){
  }
  el('modal-root').innerHTML=modal?modalView():'';
 }
-function hero(){const t=totalXP(),l=levelInfo(t),daily=dailyEvents(),done=daily.filter(e=>e.kind==='main').length;return `<section class="hero"><div class="hero-top"><div><div class="chapter">CHAPTER 01 / 毕业与新生活</div><h2>今天，也能推进一点点。</h2>${state.equippedTitle?`<span class="chip">🏅 ${safe(state.equippedTitle)}</span>`:''}<p>今天不需要满分。有真实进展，就是有效的一天。</p></div><div class="level" title="角色等级"><small>LEVEL</small><b>${l.level}</b></div></div><div class="xp-info"><span>成长经验 <strong>${t} XP</strong></span><span>距离 LV.${l.level+1}：${l.need-l.earned} XP</span></div><div class="progress" role="progressbar" aria-label="当前等级进度" aria-valuenow="${Math.round(l.pct)}" aria-valuemin="0" aria-valuemax="100"><span style="width:${l.pct}%"></span></div><div class="stats"><div class="stat"><strong>${daily.reduce((v,e)=>v+e.xp,0)} <small style="font-size:11px">XP</small></strong><span>今日获得</span></div><div class="stat"><strong>${done?'已推进':'待出发'}</strong><span>今日主线</span></div><div class="stat"><strong>🪙 ${coinBalance()}</strong><span>冒险币 · 可兑换奖励</span></div></div></section>`}
+function hero(){const t=totalXP(),l=levelInfo(t),daily=dailyEvents(),done=daily.filter(e=>e.kind==='main').length;return `<section class="hero"><div class="hero-top"><div><div class="chapter">CHAPTER 01 / 毕业与新生活</div><h2>今天，也能推进一点点。</h2>${state.equippedTitle?`<span class="chip">🏅 ${safe(state.equippedTitle)}</span>`:''}<p>今天不需要满分。有真实进展，就是有效的一天。</p></div><div class="level" title="角色等级"><small>LEVEL</small><b>${l.level}</b></div><button class="btn btn-small" data-action="open-character">🧑‍🚀 人物面板 ↗</button></div><div class="xp-info"><span>成长经验 <strong>${t} XP</strong></span><span>距离 LV.${l.level+1}：${l.need-l.earned} XP</span></div><div class="progress" role="progressbar" aria-label="当前等级进度" aria-valuenow="${Math.round(l.pct)}" aria-valuemin="0" aria-valuemax="100"><span style="width:${l.pct}%"></span></div><div class="stats"><div class="stat"><strong>${daily.reduce((v,e)=>v+e.xp,0)} <small style="font-size:11px">XP</small></strong><span>今日获得</span></div><div class="stat"><strong>${done?'已推进':'待出发'}</strong><span>今日主线</span></div><div class="stat"><strong>🪙 ${coinBalance()}</strong><span>冒险币 · 可兑换奖励</span></div></div></section>`}
 function getMain(){let t=taskById(state.mainId);if(t&&t.active!==false&&t.kind==='main')return t;return activeTasks().find(x=>x.kind==='main'&&!(x.repeat==='once'&&taskCompleted(x)))}
 function currentSides(){const list=activeTasks().filter(x=>x.kind==='side');const saved=state.sideChoice[today()];if(Array.isArray(saved))return saved.map(taskById).filter(x=>x&&x.active!==false&&x.kind==='side');let dow=new Date(today()+'T12:00:00').getDay();let preferred=(dow===0||dow===6)?['learn','explore','money']:dow===1?['workout','career','learn']:dow===5?['workout','money','explore']:['workout','learn','social'];let out=preferred.map(taskById).filter(x=>x&&list.some(y=>y.id===x.id));for(const item of list)if(out.length<2&&!out.some(x=>x.id===item.id))out.push(item);return out.slice(0,2)}
-function questCard(t,main=false){const complete=taskCompleted(t),progress=progressFor(t),status=questStatus(t);return `<article class="quest ${main?'mainquest':''} ${complete?'finished':''}"><div class="quest-left"><div class="quest-icon" aria-hidden="true">${safe(t.icon||areaInfo(t.area)[2])}</div><div class="quest-copy"><h3>${safe(t.title)}</h3><p>${safe(t.detail||'完成一个实际可验证的行动。')}</p><div class="meta"><span class="xp-pill">+${t.xp} XP · 🪙 ${coinsForTask(t)}</span><span class="muted-tag status-${status}">${statusLabel(status)}</span><span class="muted-tag">${main?'主线':(t.repeat==='weekly'?'每周可做一次':t.repeat==='once'?'一次性任务':'每日可做一次')}</span></div>${progress.note?`<div class="quest-note">✎ ${safe(progress.note)}</div>`:''}</div></div><div class="quest-actions">${!complete?`<button class="btn btn-small btn-ghost" data-action="open-progress" data-id="${safe(t.id)}">✎ 更新进度</button>`:''}<button class="btn ${complete?'btn-ghost':'btn-primary'}" data-action="complete" data-id="${safe(t.id)}">${complete?'↶ 撤销完成':'✓ 完成任务'}</button></div></article>`}
-function todayView(){const main=getMain();const sides=currentSides();const date=today();return `<div class="topline"><div class="eyebrow">YOUR REAL-LIFE ADVENTURE</div><span class="chip">● ${humanDate(date)}</span></div><h1 class="title">你的现实冒险</h1><p class="lead">毕业与求职可以并行，但每天只选一个重点推进。进度可以记下来，只有真实完成才领取奖励。</p>${hero()}${rewardTeaser()}<div class="bridge"><div class="bridge-copy"><strong>🎲 任务由 ChatGPT 制定，你来冒险</strong><span>有新计划？一键导入任务包；想调整任务？把当前状态复制给我。</span></div><div class="bridge-actions">${!state.tasks.some(t=>t.packKey&&t.packKey.startsWith(CAREER_SPRINT_PACK.packId+':'))?'<button class="btn btn-primary" data-action="open-career">🎯 领取求职冲刺主线</button>':''}${!state.tasks.some(t=>t.packKey&&t.packKey.startsWith(PERSONAL_STARTER_PACK.packId+':'))?'<button class="btn btn-primary" data-action="open-starter">✨ 领取本期推荐任务</button>':''}<button class="btn" data-action="open-pack">＋ 导入任务包</button><button class="btn" data-action="copy-snapshot">↗ 复制当前状态</button></div></div><div class="section-head"><div><h2>⚔️ 今日主线</h2><p>一个具体成果，比五小时的焦虑更重要</p></div><button class="btn btn-small btn-ghost" data-action="choose-main">切换主线</button></div>${main?questCard(main,true):`<div class="empty"><strong>还没有主线</strong>先创建一项重要任务。<p><button class="btn btn-primary" data-action="open-create">＋ 创建主线</button></p></div>`}${secondaryMain()?`<section class="parallel-focus"><div class="section-head"><div><h2>🔀 并行主线 · 备用战线</h2><p>可以随时切换，不必今天两件都完成</p></div><button class="btn btn-small btn-ghost" data-action="focus-main" data-id="${safe(secondaryMain().id)}">设为今日重点 →</button></div>${questCard(secondaryMain(),true)}</section>`:''}<div class="section-head"><div><h2>🧭 自由支线</h2><p>非必做；最多推荐两项，不追求全满</p></div><button class="btn btn-small btn-ghost" data-action="choose-sides">换一换</button></div>${sides.length?sides.map(t=>questCard(t)).join(''):'<div class="empty">今天的支线已经完成，或尚未选择。可以安心休息。</div>'}<details class="compact-log"><summary>✎ 记录今天做过的事（可选）</summary><div class="section-head"><div><h2>一句话记录</h2><p>例如：今天改了论文第五章，练了背</p></div></div><div class="panel"><div class="capture"><input id="quick-input" type="text" maxlength="240" autocomplete="off" aria-label="一句话记录成果" placeholder="记录今天做了什么……"/><button class="btn btn-primary" data-action="capture">识别并确认</button></div><p class="hint">离线关键词识别，只提供建议；不会偷偷完成任务。你确认后才加 XP。</p></div></details><div class="footnote">✦ 所有记录目前仅保存在此浏览器。没有连续打卡惩罚，也不会因休息扣分。</div>`}
-function journeyView(){const xp=totalXP(),done=MILESTONES.filter(m=>state.milestones[m.id]).length;let domainXP={};AREAS.forEach(([id])=>domainXP[id]=0);state.events.forEach(e=>domainXP[e.area]=(domainXP[e.area]||0)+e.xp);const high=Math.max(100,...Object.values(domainXP));return `<div class="eyebrow">QUEST MAP</div><h1 class="title">第一章 · 毕业与新生活</h1><p class="lead">你的章节进度来自真实里程碑，不是刷任务刷出来的。</p><div class="panel"><div class="xp-info" style="margin:0 0 10px"><strong>本章完成度</strong><span>${done} / ${MILESTONES.length} 个里程碑</span></div><div class="progress"><span style="width:${100*done/MILESTONES.length}%"></span></div></div><div class="section-head"><h2>🏰 阶段 BOSS</h2></div>${MILESTONES.map((m,i)=>{let c=state.milestones[m.id];return `<div class="map-card"><div class="map-marker ${c?'complete':''}">${c?'✓':i+1}</div><div class="map-content"><h3>${safe(m.title)}</h3><p>${safe(m.desc)}</p><span class="xp-pill">+${m.xp} XP · 🪙 ${Math.round(m.xp/2)}</span></div><button class="btn btn-small ${c?'btn-ghost':'btn-primary'}" data-action="milestone" data-id="${m.id}">${c?'↶ 撤销':'达成'}</button></div>`}).join('')}<div class="section-head"><h2>🌱 六维成长</h2></div><div class="panel"><p style="margin-top:0">成长领域的经验来自已完成任务，仅用于可视化参与程度，不能代表真实能力测评。</p><div class="domain-list">${AREAS.map(([id,label,icon])=>`<div class="domain"><span>${icon} ${label}</span><div class="progress"><span style="width:${100*(domainXP[id]||0)/high}%"></span></div><strong style="text-align:right">${domainXP[id]||0}</strong></div>`).join('')}</div></div><div class="footnote">当前章节是规划用的框架；真实送审及毕业日期请以学校通知为准。</div>`}
-function historyView(){const records=[...state.events.map(e=>({...e,recordType:'quest'})),...MILESTONES.filter(m=>state.milestones[m.id]).map(m=>({id:m.id,title:m.title,date:state.milestones[m.id].date,at:state.milestones[m.id].at,xp:m.xp,recordType:'milestone'}))].sort((a,b)=>b.at.localeCompare(a.at));const group={};records.forEach(e=>(group[e.date]??=[]).push(e));const notes=[...state.notes].sort((a,b)=>b.at.localeCompare(a.at));return `<div class="eyebrow">ADVENTURE LOG</div><h1 class="title">你的冒险日志</h1><p class="lead">不按缺席天数惩罚你。这里保存真实做过的事。</p><div class="section-head"><h2>完成记录</h2><span class="chip">累计 ${totalXP()} XP</span></div>${records.length?Object.keys(group).sort().reverse().map(date=>`<div class="date-group">${humanDate(date)}</div><div class="panel">${group[date].map(e=>`<div class="activity"><div class="activity-icon">${e.recordType==='milestone'?'🏆':areaInfo(e.area)[2]}</div><div class="activity-main"><strong>${safe(e.title)}</strong><small>${new Date(e.at).toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'})}${e.note?' · '+safe(e.note):''}</small></div><div class="activity-xp">+${e.xp}</div></div>`).join('')}</div>`).join(''):`<div class="empty"><strong>冒险还没正式开始</strong>完成第一项任务后，记录会自动出现在这里。</div>`}<div class="section-head"><h2>📍 进度足迹</h2></div>${(state.progressHistory||[]).length?`<div class="panel">${[...state.progressHistory].reverse().slice(0,30).map(p=>`<div class="activity"><span class="activity-icon">✎</span><div class="activity-main"><strong>${safe(p.title)} · ${statusLabel(p.status)}</strong><small>${safe(p.date)}${p.note?' · '+safe(p.note):''}</small></div></div>`).join('')}</div>`:'<p class="hint">任务从开始推进到待确认，都会在这里留下足迹。</p>'}<div class="section-head"><h2>随手记录</h2></div>${notes.length?`<div class="panel">${notes.map(n=>`<div class="activity"><span class="activity-icon">✎</span><div class="activity-main"><strong>${safe(n.text)}</strong><small>${humanDate(n.date)}</small></div></div>`).join('')}</div>`:'<p class="hint">一句话记录也会保存在这里，即使没有获得 XP。</p>'}`}
+function questCard(t,main=false){
+ const complete=taskCompleted(t),progress=progressFor(t),status=questStatus(t);
+ const story=taskStory(t),chapter=chapterFor(t),hasStage=!!story&&!!chapter;
+ const count=missionCount(t),goal=missionGoal(t),pct=Math.round(missionRatio(t)*100);
+ return `<article class="quest ${main?'mainquest':''} ${complete?'finished':''}"><div class="quest-left"><div class="quest-icon" aria-hidden="true">${safe(t.icon||areaInfo(t.area)[2])}</div><div class="quest-copy"><h3>${safe(t.title)}</h3><p>${safe(t.detail||'完成一个实际可验证的行动。')}</p><div class="meta"><span class="xp-pill">+${t.xp} XP · 🪙 ${coinsForTask(t)}</span><span class="muted-tag status-${status}">${statusLabel(status)}</span><span class="muted-tag">${main?'主线':(t.repeat==='weekly'?'每周可做一次':t.repeat==='once'?'一次性任务':'每日可做一次')}</span>${t.strictDaily?'<span class="muted-tag">⚔️ 强制契约</span>':''}</div>${hasStage?`<div class="quest-note">📖 ${safe(story.title)} / ${safe(chapter.title)} · 累计 ${count}/${goal} 次</div><div class="progress"><span style="width:${pct}%"></span></div>`:''}<div class="quest-note quest-origin">${safe(questOrigin(t))}</div>${progress.note?`<div class="quest-note">✎ ${safe(progress.note)}</div>`:''}</div></div><div class="quest-actions"><button class="btn btn-small btn-ghost" data-action="quest-detail" data-id="${safe(t.id)}">📜 详情</button>${t.kind==='main'&&t.repeat==='daily'?`<button class="btn btn-small btn-ghost" data-action="open-contract" data-id="${safe(t.id)}">${t.strictDaily?'⚔️ 契约管理':'签订每日契约'}</button>`:''}${!complete?`<button class="btn btn-small btn-ghost" data-action="open-progress" data-id="${safe(t.id)}">✎ 更新进度</button>`:''}<button class="btn ${complete?'btn-ghost':'btn-primary'}" data-action="complete" data-id="${safe(t.id)}">${complete?'↶ 撤销完成':'✓ 完成任务'}</button></div></article>`;
+}
+function todayView(){const main=getMain();const sides=currentSides();const date=today();return `<div class="topline"><div class="eyebrow">YOUR REAL-LIFE ADVENTURE</div><span class="chip">● ${humanDate(date)}</span></div><h1 class="title">你的现实冒险</h1><p class="lead">毕业与求职可以并行，但每天只选一个重点推进。进度可以记下来，只有真实完成才领取奖励。</p>${hero()}${main&&taskStory(main)?`<div class="panel story-teaser"><strong>📖 ${safe(taskStory(main).title)} · 总目标</strong><p>${safe(taskStory(main).goal)}</p><div class="progress"><span style="width:${Math.round(storylineStats(taskStory(main)).rate*100)}%"></span></div><div class="hint">主线章节完成度 ${Math.round(storylineStats(taskStory(main)).rate*100)}% · 详情见「旅程」</div></div>`:''}${rewardTeaser()}<div class="bridge"><div class="bridge-copy"><strong>🎲 任务由 ChatGPT 制定，你来冒险</strong><span>有新计划？一键导入任务包；想调整任务？把当前状态复制给我。</span></div><div class="bridge-actions">${!state.tasks.some(t=>t.packKey&&t.packKey.startsWith(CAREER_SPRINT_PACK.packId+':'))?'<button class="btn btn-primary" data-action="open-career">🎯 领取求职冲刺主线</button>':''}${!state.tasks.some(t=>t.packKey&&t.packKey.startsWith(PERSONAL_STARTER_PACK.packId+':'))?'<button class="btn btn-primary" data-action="open-starter">✨ 领取本期推荐任务</button>':''}<button class="btn" data-action="open-pack">＋ 导入任务包</button><button class="btn" data-action="copy-snapshot">↗ 复制当前状态</button></div></div><div class="section-head"><div><h2>⚔️ 今日主线</h2><p>一个具体成果，比五小时的焦虑更重要</p></div><button class="btn btn-small btn-ghost" data-action="choose-main">切换主线</button></div>${main?questCard(main,true):`<div class="empty"><strong>还没有主线</strong>先创建一项重要任务。<p><button class="btn btn-primary" data-action="open-create">＋ 创建主线</button></p></div>`}${secondaryMain()?`<section class="parallel-focus"><div class="section-head"><div><h2>🔀 并行主线 · 备用战线</h2><p>可以随时切换，不必今天两件都完成</p></div><button class="btn btn-small btn-ghost" data-action="focus-main" data-id="${safe(secondaryMain().id)}">设为今日重点 →</button></div>${questCard(secondaryMain(),true)}</section>`:''}<div class="section-head"><div><h2>🧭 自由支线</h2><p>非必做；最多推荐两项，不追求全满</p></div><button class="btn btn-small btn-ghost" data-action="choose-sides">换一换</button></div>${sides.length?sides.map(t=>questCard(t)).join(''):'<div class="empty">今天的支线已经完成，或尚未选择。可以安心休息。</div>'}<details class="compact-log"><summary>✎ 记录今天做过的事（可选）</summary><div class="section-head"><div><h2>一句话记录</h2><p>例如：今天改了论文第五章，练了背</p></div></div><div class="panel"><div class="capture"><input id="quick-input" type="text" maxlength="240" autocomplete="off" aria-label="一句话记录成果" placeholder="记录今天做了什么……"/><button class="btn btn-primary" data-action="capture">识别并确认</button></div><p class="hint">离线关键词识别，只提供建议；不会偷偷完成任务。你确认后才加 XP。</p></div></details><div class="footnote">✦ 存档按照设备模式保存到 IndexedDB 或 Supabase。只有你主动签订的主线每日契约才统计纪律值；不会扣 XP 或奖励币。</div>`}
+function journeyView(){const xp=totalXP(),done=MILESTONES.filter(m=>state.milestones[m.id]).length;let domainXP={};AREAS.forEach(([id])=>domainXP[id]=0);state.events.forEach(e=>domainXP[e.area]=(domainXP[e.area]||0)+e.xp);const high=Math.max(100,...Object.values(domainXP));return `<div class="eyebrow">QUEST MAP</div><h1 class="title">第一章 · 毕业与新生活</h1><p class="lead">你的章节进度来自真实里程碑，不是刷任务刷出来的。</p><div class="panel"><div class="xp-info" style="margin:0 0 10px"><strong>本章完成度</strong><span>${done} / ${MILESTONES.length} 个里程碑</span></div><div class="progress"><span style="width:${100*done/MILESTONES.length}%"></span></div></div><div class="section-head"><div><h2>📖 主线篇章与最终目标</h2><p>每个章节由可验证的小步骤推进，支持累计每日任务</p></div><button class="btn btn-small btn-primary" data-action="open-story-create">＋ 创建长期主线</button></div>${storylineCards()}<div class="section-head"><h2>🏰 阶段 BOSS</h2></div>${MILESTONES.map((m,i)=>{let c=state.milestones[m.id];return `<div class="map-card"><div class="map-marker ${c?'complete':''}">${c?'✓':i+1}</div><div class="map-content"><h3>${safe(m.title)}</h3><p>${safe(m.desc)}</p><span class="xp-pill">+${m.xp} XP · 🪙 ${Math.round(m.xp/2)}</span></div><button class="btn btn-small ${c?'btn-ghost':'btn-primary'}" data-action="milestone" data-id="${m.id}">${c?'↶ 撤销':'达成'}</button></div>`}).join('')}<div class="section-head"><h2>🌱 六维成长</h2></div><div class="panel"><p style="margin-top:0">成长领域的经验来自已完成任务，仅用于可视化参与程度，不能代表真实能力测评。</p><div class="domain-list">${AREAS.map(([id,label,icon])=>`<div class="domain"><span>${icon} ${label}</span><div class="progress"><span style="width:${100*(domainXP[id]||0)/high}%"></span></div><strong style="text-align:right">${domainXP[id]||0}</strong></div>`).join('')}</div></div><div class="footnote">当前章节是规划用的框架；真实送审及毕业日期请以学校通知为准。</div>`}
+function historyView(){const records=[...state.events.map(e=>({...e,recordType:'quest'})),...MILESTONES.filter(m=>state.milestones[m.id]).map(m=>({id:m.id,title:m.title,date:state.milestones[m.id].date,at:state.milestones[m.id].at,xp:m.xp,recordType:'milestone'}))].sort((a,b)=>b.at.localeCompare(a.at));const group={};records.forEach(e=>(group[e.date]??=[]).push(e));const notes=[...state.notes].sort((a,b)=>b.at.localeCompare(a.at));return `<div class="eyebrow">ADVENTURE LOG</div><h1 class="title">你的冒险日志</h1><p class="lead">这里保存真实做过的事。仅主动开启的强制每日契约参与纪律值统计。</p><div class="section-head"><h2>完成记录</h2><span class="chip">累计 ${totalXP()} XP</span></div>${records.length?Object.keys(group).sort().reverse().map(date=>`<div class="date-group">${humanDate(date)}</div><div class="panel">${group[date].map(e=>`<div class="activity"><div class="activity-icon">${e.recordType==='milestone'?'🏆':areaInfo(e.area)[2]}</div><div class="activity-main"><strong>${safe(e.title)}</strong><small>${new Date(e.at).toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'})}${e.note?' · '+safe(e.note):''}</small></div><div class="activity-xp">+${e.xp}</div></div>`).join('')}</div>`).join(''):`<div class="empty"><strong>冒险还没正式开始</strong>完成第一项任务后，记录会自动出现在这里。</div>`}<div class="section-head"><h2>📍 进度足迹</h2></div>${(state.progressHistory||[]).length?`<div class="panel">${[...state.progressHistory].reverse().slice(0,30).map(p=>`<div class="activity"><span class="activity-icon">✎</span><div class="activity-main"><strong>${safe(p.title)} · ${statusLabel(p.status)}</strong><small>${safe(p.date)}${p.note?' · '+safe(p.note):''}</small></div></div>`).join('')}</div>`:'<p class="hint">任务从开始推进到待确认，都会在这里留下足迹。</p>'}<div class="section-head"><h2>随手记录</h2></div>${notes.length?`<div class="panel">${notes.map(n=>`<div class="activity"><span class="activity-icon">✎</span><div class="activity-main"><strong>${safe(n.text)}</strong><small>${humanDate(n.date)}</small></div></div>`).join('')}</div>`:'<p class="hint">一句话记录也会保存在这里，即使没有获得 XP。</p>'}`}
 function cloudInner(){
  const c=window.GamingLifeCloud?.status()||{phase:'initializing',message:'尚未连接',configured:false,signedIn:false,pending:null,mode:'local'};
  const pending=c.pending==='upload'?`<div class="cloud-warning"><strong>云端目前为空</strong><p>上传前请确认：这会把当前浏览器的完整游戏存档与这个账号关联，不会删除本地数据。</p><button class="btn btn-primary" data-action="cloud-use-local">确认上传本机存档</button></div>`:
@@ -315,14 +485,27 @@ function cloudUpdated(){const host=el('cloud-panel');if(host)host.innerHTML=clou
 async function cloudAction(fn){try{await fn();cloudUpdated()}catch(e){notify('同步操作失败：'+(e?.message||'未知错误'));cloudUpdated()}}
 function downloadCloudJson(text){const blob=new Blob([text],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=`GamingLife-cloud-before-overwrite-${today()}.json`;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1200)}
 function settingsView(){const c=window.GamingLifeCloud?.status();if(c?.mode==='cloud'&&!c.hasCloudData)return `<div class="eyebrow">CLOUD ADVENTURE</div><h1 class="title">冒险设置</h1><p class="lead">先登录 Supabase 读取云端存档，本设备不会新建一份冒充云端的数据。</p><div class="panel cloud-panel" id="cloud-panel">${cloudInner()}</div>`;const main=getMain();return `<div class="eyebrow">MAKE IT YOURS</div><h1 class="title">冒险设置</h1><p class="lead">系统应该适应你，而不是让你为了管理系统而忙碌。</p><div class="panel cloud-panel" id="cloud-panel">${cloudInner()}</div><div class="panel" style="margin-top:15px"><div class="section-head" style="margin:0 0 8px"><h2>你的任务库</h2><button class="btn btn-small btn-primary" data-action="open-create">＋ 新任务</button></div><p>当前主线：${main?safe(main.title):'未设置'}。可创建自己的论文、求职或生活任务。</p>${state.tasks.map(t=>`<div class="activity"><span class="activity-icon">${safe(t.icon||'✓')}</span><div class="activity-main"><strong>${safe(t.title)}</strong><small>${t.kind==='main'?'主线':'支线'} · ${t.repeat==='daily'?'每天':t.repeat==='weekly'?'每周':'一次'} · ${t.xp} XP ${t.active===false?'· 已停用':''}</small></div><button class="btn btn-small btn-ghost" data-action="toggle-active" data-id="${safe(t.id)}">${t.active===false?'启用':'停用'}</button></div>`).join('')}</div><div class="panel" style="margin-top:15px"><h3>🎁 奖励设置</h3><p>在奖励页面自定义喜欢的体验。已完成任务额外获得冒险币（主线最高25币、普通支线约8–10币），余额会随着兑换减少，XP 不会被消耗。</p><div class="data-actions"><button class="btn btn-primary" data-action="nav" data-screen="rewards">打开奖励商店</button><button class="btn" data-action="open-reward-create">自定义奖励</button></div></div><div class="panel" style="margin-top:15px"><h3>🎲 任务大厅 · 和 ChatGPT 协作</h3><p>从 ChatGPT 获取任务包 JSON，粘贴到导入窗口；需要重新规划时，一键复制当前游戏状态发给 ChatGPT。任务包经你预览确认才应用。</p><div class="data-actions"><button class="btn btn-primary" data-action="open-pack">＋ 导入任务包</button><button class="btn" data-action="copy-snapshot">↗ 复制当前状态</button></div></div><div class="panel" style="margin-top:15px"><h3>🔐 数据与备份</h3><p>电脑默认以 IndexedDB 本地优先，手机可选云端优先；联网登录 Supabase 后同步，完整存档受账号隔离。云端优先模式不支持离线编辑，建议定期手动导出重要备份。</p><div class="data-actions"><button class="btn btn-primary" data-action="export">↓ 导出 JSON 备份</button><label class="btn" for="import-file">↑ 导入备份</label><input type="file" id="import-file" accept=".json,application/json" hidden><button class="btn btn-danger" data-action="reset">清空并重新开始</button></div></div><div class="panel" style="margin-top:15px"><h3>🤖 什么是「智能」？</h3><p>V1 的推荐和一句话识别使用本地规则，不是大语言模型。我们先验证一键完成、每日推荐和成长反馈是否真的顺手；如果有效，再接入可选 AI、云端同步和更灵活的任务计划。</p></div><div class="footnote">Gaming Life V1.6 · 电脑本地优先 / 手机可选云端优先</div>`}
-function modalView(){if(modal==='progress'){
+function modalView(){
+ if(modal==='character')return `<div class="modal-wrap"><div class="modal modal-wide" role="dialog" aria-modal="true" aria-labelledby="dialog-title"><div class="modal-top"><h2 id="dialog-title">🧑‍🚀 冒险者 · 人物面板</h2><button class="modal-close" data-action="close" aria-label="关闭">×</button></div>${characterPanel()}<div class="modal-actions"><button class="btn btn-primary" data-action="close">继续冒险</button></div></div></div>`;
+ if(modal==='quest-detail'){
+  const t=taskById(progressTaskId);if(!t)return '';
+  const arc=taskStory(t),chapter=chapterFor(t);
+  return `<div class="modal-wrap"><div class="modal" role="dialog" aria-modal="true" aria-labelledby="dialog-title"><div class="modal-top"><h2 id="dialog-title">📜 任务档案</h2><button class="modal-close" data-action="close" aria-label="关闭">×</button></div><h3>${safe(t.title)}</h3><p>${safe(t.detail||'无额外说明')}</p><p class="hint">${safe(questOrigin(t))}</p><p class="hint">任务类型：${t.kind==='main'?'主线':'支线'} · ${t.repeat==='daily'?'每天':t.repeat==='weekly'?'每周':'一次性'} · +${t.xp} XP</p>${arc?`<div class="panel"><strong>📖 ${safe(arc.title)}</strong><p>最终目标：${safe(arc.goal)}</p><p>所属章节：${safe(chapter?.title||'未分配章节')}</p><p>累计完成：${missionCount(t)} / ${missionGoal(t)} 次</p><div class="progress"><span style="width:${Math.round(missionRatio(t)*100)}%"></span></div></div>`:''}<p class="hint">完成次数按实际任务事件统计，不代表最终目标已实现。历史任务可能没有记录原发布日期。</p><div class="modal-actions"><button class="btn btn-primary" data-action="close">返回</button></div></div></div>`;
+ }
+ if(modal==='story-create')return `<div class="modal-wrap"><div class="modal" role="dialog" aria-modal="true" aria-labelledby="dialog-title"><div class="modal-top"><h2 id="dialog-title">📖 创造你的长期主线</h2><button class="modal-close" data-action="close" aria-label="关闭">×</button></div><form id="story-create-form"><div class="field"><label>主线名称</label><input name="title" maxlength="70" required placeholder="例如：获得第一份满意的工作"></div><div class="field"><label>最终目标（真实、可核实）</label><textarea name="goal" maxlength="250" required placeholder="例如：正式获得一份方向匹配的工作 offer"></textarea></div><div class="field"><label>章节拆解（每行一章，最多8章）</label><textarea name="chapters" maxlength="650" rows="5" required placeholder="第一章 · 准备简历\n第二章 · 搜索岗位\n第三章 · 完成投递"></textarea></div><p class="hint">创建后，可在「新任务」里选择章节，并设置一次性或每日/每周累计完成目标；章节不会自行发放 XP。</p><div class="modal-actions"><button type="button" class="btn" data-action="close">取消</button><button type="submit" class="btn btn-primary">创建长期主线</button></div></form></div></div>`;
+ if(modal==='contract'){
+  const t=taskById(progressTaskId);if(!t||t.kind!=='main'||t.repeat!=='daily')return '';
+  const misses=missedContractDays(t);
+  return `<div class="modal-wrap"><div class="modal" role="dialog" aria-modal="true" aria-labelledby="dialog-title"><div class="modal-top"><h2 id="dialog-title">⚔️ 每日强制契约</h2><button class="modal-close" data-action="close" aria-label="关闭">×</button></div><h3>${safe(t.title)}</h3><p>${t.strictDaily?'已启用：从 '+safe(t.strictSince)+' 开始统计。':'尚未启用。只有你明确选择后才生效。'}</p><p class="hint">规则：仅从开启当日起计算，不追究更早的任务；前7日漏做每次 -4 纪律值，最低70。可为真实例外请假。不扣 XP、金币、奖励或现金；可以随时停止未来考核。</p>${misses.map(date=>`<div class="activity"><span>${safe(date)} · 未完成</span><button class="btn btn-small" data-action="excuse-day" data-id="${safe(t.id)}" data-date="${date}">请假 / 纠正</button></div>`).join('')}<div class="modal-actions"><button class="btn" data-action="close">返回</button><button class="btn btn-primary" data-action="contract-toggle" data-id="${safe(t.id)}">${t.strictDaily?'停止未来考核':'自愿开启强制契约'}</button></div></div></div>`;
+ }
+if(modal==='progress'){
  const t=taskById(progressTaskId);if(!t)return '';
  const progress=progressFor(t);
  return `<div class="modal-wrap"><div class="modal" role="dialog" aria-modal="true" aria-labelledby="dialog-title"><div class="modal-top"><h2 id="dialog-title">📍 记录进度</h2><button class="modal-close" data-action="close" aria-label="关闭">×</button></div><p><strong>${safe(t.title)}</strong></p><p class="hint">有真实进展但还没达到完成条件？先存进度。不会提前发放 XP 或奖励币。</p><form id="progress-form"><input type="hidden" name="taskId" value="${safe(t.id)}"><div class="field"><label for="quest-progress-status">当前状态</label><select id="quest-progress-status" name="status"><option value="todo" ${progress.status==='todo'?'selected':''}>未开始</option><option value="doing" ${progress.status==='doing'?'selected':''}>进行中</option><option value="review" ${progress.status==='review'?'selected':''}>待确认 / 等待反馈</option></select></div><div class="field"><label for="quest-progress-note">这次推进了什么？（可选）</label><textarea id="quest-progress-note" name="note" maxlength="240" placeholder="例如：简历两版候选稿已完成，待核对毕业日期">${safe(progress.note||'')}</textarea></div><div class="modal-actions"><button type="button" class="btn" data-action="close">取消</button><button type="submit" class="btn btn-primary">保存进度</button></div></form></div></div>`;
  }
 if(modal==='reward-create')return `<div class="modal-wrap"><div class="modal" role="dialog" aria-modal="true" aria-labelledby="dialog-title"><div class="modal-top"><h2 id="dialog-title">🎁 创造专属奖励</h2><button class="modal-close" data-action="close" aria-label="关闭">×</button></div><p class="hint">从真正想体验的事开始，不建议兑换正常睡眠、日常吃饭或必要休息。</p><form id="reward-create-form"><div class="field"><label for="reward-title">奖励名称</label><input id="reward-title" name="title" maxlength="40" required placeholder="例如：周末城市探索"></div><div class="field"><label for="reward-detail">兑换后做什么</label><textarea id="reward-detail" name="detail" maxlength="180" placeholder="写得越具体，越有期待感。"></textarea></div><div class="field"><label for="reward-rmb">现实消费预算预留（元，免费填0）</label><input id="reward-rmb" name="rmb" type="number" min="0" max="300" step="1" value="0"><span class="hint">只有你明确愿意花钱时才填金额，不能超月度预算</span></div><div class="grid2"><div class="field"><label for="reward-icon">图标</label><select id="reward-icon" name="icon"><option>🎁</option><option>🎮</option><option>🍰</option><option>🎬</option><option>🧭</option><option>🏸</option><option>☕</option><option>🎨</option></select></div><div class="field"><label for="reward-price">需要冒险币</label><input id="reward-price" name="price" type="number" min="1" max="1000" step="1" value="20" required></div></div><div class="modal-actions"><button type="button" class="btn" data-action="close">取消</button><button type="submit" class="btn btn-primary">加入奖励商店</button></div></form></div></div>`;
 if(modal==='pack')return `<div class="modal-wrap"><div class="modal" role="dialog" aria-modal="true" aria-labelledby="dialog-title"><div class="modal-top"><h2 id="dialog-title">🎲 从 ChatGPT 领取任务包</h2><button class="modal-close" data-action="close" aria-label="关闭">×</button></div><p class="hint">粘贴 ChatGPT 生成的 Gaming Life 任务包 JSON。先预览，确认后才写入浏览器；重复导入同一任务包会更新任务，不会重复创建或补发 XP。</p><form id="pack-form"><label class="field" for="pack-json"><span>任务包 JSON</span><textarea id="pack-json" name="pack-json" class="pack-textarea" maxlength="45000" required placeholder='{"format":"gaming-life.quest-pack","version":1,"packId":"my-week","title":"本周冒险","focusId":"thesis","quests":[{"id":"thesis","title":"完成论文一项明确修改","detail":"保存实际修改","kind":"main","area":"career","repeat":"once","xp":50}]}'></textarea></label><div class="modal-actions"><button type="button" class="btn" data-action="close">取消</button><button type="submit" class="btn btn-primary">检查任务包</button></div></form>${packPreview()}${validatedPack?`<button class="btn btn-primary" style="width:100%" data-action="confirm-pack">确认导入 ${validatedPack.quests.length} 项任务</button>`:''}</div></div>`;
-if(modal==='create')return `<div class="modal-wrap" role="presentation"><div class="modal" role="dialog" aria-modal="true" aria-labelledby="dialog-title"><div class="modal-top"><h2 id="dialog-title">＋ 创建新任务</h2><button class="modal-close" data-action="close" aria-label="关闭">×</button></div><form id="create-form"><div class="field"><label for="task-title">任务名称</label><input id="task-title" name="title" required maxlength="65" placeholder="例如：完成论文第五章图表校对"></div><div class="field"><label for="task-detail">完成标准（可选）</label><textarea id="task-detail" name="detail" maxlength="250" placeholder="怎样才算真正完成？"></textarea></div><div class="grid2"><div class="field"><label for="task-kind">类别</label><select id="task-kind" name="kind"><option value="side">支线</option><option value="main">主线</option></select></div><div class="field"><label for="task-repeat">重复周期</label><select id="task-repeat" name="repeat"><option value="once">仅一次</option><option value="daily">每天</option><option value="weekly">每周</option></select></div></div><div class="grid2"><div class="field"><label for="task-area">成长方向</label><select id="task-area" name="area">${AREAS.map(a=>`<option value="${a[0]}">${a[2]} ${a[1]}</option>`).join('')}</select></div><div class="field"><label for="task-xp">完成 XP</label><select id="task-xp" name="xp"><option value="10">10 · 小任务</option><option value="15">15 · 普通支线</option><option value="30">30 · 深度任务</option><option value="50">50 · 重要主线</option></select></div></div><div class="modal-actions"><button type="button" class="btn" data-action="close">取消</button><button type="submit" class="btn btn-primary">创建任务</button></div></form></div></div>`;
+if(modal==='create')return `<div class="modal-wrap" role="presentation"><div class="modal" role="dialog" aria-modal="true" aria-labelledby="dialog-title"><div class="modal-top"><h2 id="dialog-title">＋ 创建新任务</h2><button class="modal-close" data-action="close" aria-label="关闭">×</button></div><form id="create-form"><div class="field"><label for="task-title">任务名称</label><input id="task-title" name="title" required maxlength="65" placeholder="例如：完成论文第五章图表校对"></div><div class="field"><label for="task-detail">完成标准（可选）</label><textarea id="task-detail" name="detail" maxlength="250" placeholder="怎样才算真正完成？"></textarea></div><div class="grid2"><div class="field"><label for="task-kind">类别</label><select id="task-kind" name="kind"><option value="side">支线</option><option value="main">主线</option></select></div><div class="field"><label for="task-repeat">重复周期</label><select id="task-repeat" name="repeat"><option value="once">仅一次</option><option value="daily">每天</option><option value="weekly">每周</option></select></div></div><div class="grid2"><div class="field"><label for="task-area">成长方向</label><select id="task-area" name="area">${AREAS.map(a=>`<option value="${a[0]}">${a[2]} ${a[1]}</option>`).join('')}</select></div><div class="field"><label for="task-xp">完成 XP</label><select id="task-xp" name="xp"><option value="10">10 · 小任务</option><option value="15">15 · 普通支线</option><option value="30">30 · 深度任务</option><option value="50">50 · 重要主线</option></select></div></div><div class="field"><label for="task-chapter">所属长期主线 / 章节（可选）</label><select id="task-chapter" name="chapterKey"><option value="">独立任务，不关联章节</option>${(state.storylines||[]).flatMap(a=>(a.chapters||[]).map(c=>`<option value="${safe(a.id+'|'+c.id)}">${safe(a.title)} / ${safe(c.title)}</option>`)).join('')}</select></div><div class="field"><label for="task-count">章节累计完成目标（次）</label><input id="task-count" name="targetCount" type="number" min="1" max="100" value="1"><small class="hint">例如：每日论文任务需完成12次，本章该步骤才显示100%。每日任务不一定强制，开启严格考核需另行签订契约。</small></div><div class="modal-actions"><button type="button" class="btn" data-action="close">取消</button><button type="submit" class="btn btn-primary">创建任务</button></div></form></div></div>`;
 if(modal==='sides')return `<div class="modal-wrap"><div class="modal" role="dialog" aria-modal="true" aria-labelledby="dialog-title"><div class="modal-top"><h2 id="dialog-title">今天想做哪些支线？</h2><button class="modal-close" data-action="close" aria-label="关闭">×</button></div><p class="hint">最多选2项，完全可以不选。完成的支线不会重复刷 XP。</p><form id="side-form">${activeTasks().filter(t=>t.kind==='side').map(t=>`<label class="checkline"><input type="checkbox" name="side" value="${safe(t.id)}" ${currentSides().some(s=>s.id===t.id)?'checked':''}><span>${safe(t.icon)} <strong>${safe(t.title)}</strong><br><span class="hint">${t.xp} XP ${taskCompleted(t)?'· 本周期已完成':''}</span></span></label>`).join('')}<div class="modal-actions"><button type="button" class="btn" data-action="close">取消</button><button type="submit" class="btn btn-primary">使用今天的选择</button></div></form></div></div>`;
 if(modal==='main')return `<div class="modal-wrap"><div class="modal" role="dialog" aria-modal="true" aria-labelledby="dialog-title"><div class="modal-top"><h2 id="dialog-title">选择当前主线</h2><button class="modal-close" data-action="close" aria-label="关闭">×</button></div><p class="hint">这里选择今天优先推进的主线；另一条会保留在首页的并行战线，不必两条同时完成。</p>${activeTasks().filter(t=>t.kind==='main').map(t=>`<button class="btn" style="display:flex;width:100%;justify-content:flex-start;margin-bottom:9px" data-action="set-main" data-id="${safe(t.id)}">${safe(t.icon)} ${safe(t.title)} ${state.mainId===t.id?'✓':''}</button>`).join('')}<div class="modal-actions"><button class="btn btn-primary" data-action="open-create">＋ 创建新主线</button></div></div></div>`;
 if(modal==='capture')return `<div class="modal-wrap"><div class="modal" role="dialog" aria-modal="true" aria-labelledby="dialog-title"><div class="modal-top"><h2 id="dialog-title">核对你的记录</h2><button class="modal-close" data-action="close" aria-label="关闭">×</button></div><p>${safe(pendingText)}</p><p class="hint">下面只是本地关键词猜测，勾选确实完成的任务才会获得 XP。</p><form id="capture-form">${pendingIds.length?pendingIds.map(id=>{let t=taskById(id);return t?`<label class="checkline"><input type="checkbox" name="matched" value="${safe(id)}" checked ${taskCompleted(t)?'disabled':''}><span>${safe(t.icon)} <strong>${safe(t.title)}</strong><br><span class="hint">${taskCompleted(t)?'本周期已经记录':'完成后 +'+t.xp+' XP'}</span></span></label>`:''}).join(''):'<p class="hint">没有发现明确匹配的任务。你仍可以保存这句日志。</p>'}<div class="modal-actions"><button type="button" class="btn" data-action="close">取消</button><button type="submit" class="btn btn-primary">确认并保存记录</button></div></form></div></div>`;return ''}
@@ -330,7 +513,7 @@ function matchText(raw){const rules=[['thesis',/(论文|盲审|正文|改了第.
 function downloadBackup(){const blob=new Blob([JSON.stringify({...state,exportedAt:new Date().toISOString()},null,2)],{type:'application/json'});const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=`GamingLife-backup-${today()}.json`;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),800);notify('备份已导出，请妥善保存')}
 function inputHandler(e){if(e.target?.id==='import-file'&&window.GamingLifeCloud?.status().mode==='cloud'&&!window.GamingLifeCloud.status().canEdit){notify('云端暂不可编辑，请先登录同步');return}if(e.target?.id==='import-file'&&e.target.files?.[0]){const file=e.target.files[0];if(file.size>2_000_000){notify('备份过大，请确认文件是否正确');return}const reader=new FileReader();reader.onload=()=>{try{const v=JSON.parse(reader.result);if(v.version!==1||!Array.isArray(v.tasks)||!Array.isArray(v.events)||!Array.isArray(v.notes)||('rewards' in v&&!Array.isArray(v.rewards))||('redemptions' in v&&!Array.isArray(v.redemptions)))throw new Error('format');if(!confirm('导入将替换此浏览器当前所有 Gaming Life 记录。请确认已备份原数据。'))return;state=migrate(v);save();render();notify('备份导入完成')}catch(err){notify('文件格式不正确，未修改当前记录')}};reader.readAsText(file)}}
 function submitHandler(e){
- if(['progress-form','reward-budget-form','pack-form','reward-create-form','create-form','side-form','capture-form'].includes(e.target?.id)&&window.GamingLifeCloud?.status().mode==='cloud'&&!window.GamingLifeCloud.status().canEdit){e.preventDefault();notify('云端同步未就绪；请先连接并完成保存');return}
+ if(['progress-form','reward-budget-form','pack-form','reward-create-form','create-form','story-create-form','side-form','capture-form'].includes(e.target?.id)&&window.GamingLifeCloud?.status().mode==='cloud'&&!window.GamingLifeCloud.status().canEdit){e.preventDefault();notify('云端同步未就绪；请先连接并完成保存');return}
  if(e.target?.id==='cloud-config-form'){e.preventDefault();const f=new FormData(e.target);cloudAction(()=>window.GamingLifeCloud.configure(f.get('url'),f.get('key')));return}
  if(e.target?.id==='cloud-auth-form'){e.preventDefault();const f=new FormData(e.target);cloudAction(()=>window.GamingLifeCloud.login(f.get('email'),f.get('password')));return}
 if(e.target?.id==='progress-form'){
@@ -341,8 +524,60 @@ if(e.target?.id==='progress-form'){
  return;
  }
 if(e.target?.id==='reward-budget-form'){e.preventDefault();const b=Number(new FormData(e.target).get('budget'));if(!Number.isInteger(b)||b<0||b>300){notify('请输入0到300元之间的整数');return}if(b<committedRmb()){notify('预算不能低于本月已预留金额；可先取消未兑现奖励');return}state.monthlyRewardBudgetRmb=b;if(save()){render();notify('本月奖励预算已更新')}return}if(e.target?.id==='pack-form'){e.preventDefault();try{validatedPack=checkPack(String(new FormData(e.target).get('pack-json')||''));const raw=e.target.querySelector('#pack-json').value;render();const input=el('pack-json');if(input)input.value=raw;notify('任务包检查通过，请确认导入');}catch(err){validatedPack=null;notify(err.message||'任务包格式不正确')}return}if(e.target?.id==='reward-create-form'){e.preventDefault();const form=new FormData(e.target);const title=String(form.get('title')||'').trim(),detail=String(form.get('detail')||'').trim(),price=Number(form.get('price')),rmb=Number(form.get('rmb')); if(!title||title.length>40||detail.length>180||!Number.isInteger(price)||price<1||price>2000||!Number.isInteger(rmb)||rmb<0||rmb>300){notify('请输入有效的奖励名称与1–1000枚金币的价格');return}const icon=String(form.get('icon')||'🎁');if(!['🎁','🎮','🍰','🎬','🧭','🏸','☕','🎨'].includes(icon))return notify('奖励图标无效');state.rewards.push({id:uid(),title,detail,price,rmb,category:rmb?'低预算':'免费体验',icon,active:true});if(save()){modal='';navigate('rewards');notify('新奖励已加入商店')}return}
-if(e.target?.id==='create-form'){e.preventDefault();const f=new FormData(e.target);const title=String(f.get('title')||'').trim();if(!title)return;const kind=f.get('kind')==='main'?'main':'side',xp=Number(f.get('xp'))||15,area=String(f.get('area')||'career');let task={id:uid(),title,coins:kind==='main'?Math.round(xp/2):Math.round(xp/2),detail:String(f.get('detail')||'').trim(),kind,area,xp,repeat:['once','daily','weekly'].includes(f.get('repeat'))?f.get('repeat'):'once',icon:areaInfo(area)[2],active:true};state.tasks.push(task);if(kind==='main'){const previous=getMain();if(previous&&previous.id!==task.id)state.secondaryMainId=previous.id;state.mainId=task.id;}save();modal='';render();notify('已创建新任务');return}if(e.target?.id==='side-form'){e.preventDefault();const ids=[...new FormData(e.target).getAll('side')].slice(0,2);state.sideChoice[today()]=ids;save();modal='';render();notify('今日支线已更新');return}if(e.target?.id==='capture-form'){e.preventDefault();const ids=[...new FormData(e.target).getAll('matched')];const content=pendingText;state.notes.push({id:uid(),text:content,date:today(),at:new Date().toISOString()});let n=0;for(const id of ids){const t=taskById(id);if(t&&!taskCompleted(t)){state.events.push({id:uid(),taskId:t.id,title:t.title,xp:t.xp,coins:awardCoins(t),area:t.area,kind:t.kind,date:today(),at:new Date().toISOString(),note:content});n++}}save();modal='';pendingText='';pendingIds=[];render();notify(n?`已记录 ${n} 项任务，奖励已发放到冒险币余额`:'已保存今天的日志');return}}
+if(e.target?.id==='story-create-form'){
+ e.preventDefault();const f=new FormData(e.target),title=String(f.get('title')||'').trim(),goal=String(f.get('goal')||'').trim();
+ const names=String(f.get('chapters')||'').split(/\r?\n/).map(x=>x.trim()).filter(Boolean);
+ if(!title||title.length>70||!goal||goal.length>250||names.length<1||names.length>8||names.some(x=>x.length>80)||new Set(names).size!==names.length){notify('请填写主线、最终目标与1–8个不同章节');return}
+ const id='story-'+uid().replace(/[^a-zA-Z0-9_-]/g,'');
+ state.storylines.push({id,title,goal,source:'玩家创建',createdAt:new Date().toISOString(),chapters:names.map((name,i)=>({id:'chapter-'+(i+1),title:name,goal:''}))});
+ if(save()){modal='';navigate('journey');notify('新主线已建立，接下来可以把任务关联到章节')}return;
+}
+if(e.target?.id==='create-form'){
+ e.preventDefault();const f=new FormData(e.target),title=String(f.get('title')||'').trim();
+ if(!title)return;
+ const kind=f.get('kind')==='main'?'main':'side',xp=Number(f.get('xp'))||15,area=String(f.get('area')||'career'),repeat=['once','daily','weekly'].includes(f.get('repeat'))?f.get('repeat'):'once';
+ const targetCount=Number(f.get('targetCount')||1);
+ const chapterKey=String(f.get('chapterKey')||''),[storylineId,chapterId]=chapterKey?chapterKey.split('|'):[null,null];
+ if(!Number.isInteger(targetCount)||targetCount<1||targetCount>100||chapterKey&&(!storyFor(storylineId)?.chapters?.some(c=>c.id===chapterId))){notify('请选择有效章节和1–100次累计目标');return}
+ const now=new Date().toISOString();
+ const task={id:uid(),title,coins:Math.round(xp/2),detail:String(f.get('detail')||'').trim(),kind,area,xp,repeat,icon:areaInfo(area)[2],active:true,
+   storylineId:storylineId||null,chapterId:chapterId||null,targetCount,sourceLabel:'玩家手动发布',publishedAt:now,updatedAt:now,strictDaily:false};
+ state.tasks.push(task);
+ if(kind==='main'){const previous=getMain();if(previous&&previous.id!==task.id)state.secondaryMainId=previous.id;state.mainId=task.id;}
+ if(save()){modal='';render();notify('新任务已发布 · '+today())}return;
+}
+if(e.target?.id==='side-form'){e.preventDefault();const ids=[...new FormData(e.target).getAll('side')].slice(0,2);state.sideChoice[today()]=ids;save();modal='';render();notify('今日支线已更新');return}if(e.target?.id==='capture-form'){e.preventDefault();const ids=[...new FormData(e.target).getAll('matched')];const content=pendingText;state.notes.push({id:uid(),text:content,date:today(),at:new Date().toISOString()});let n=0;for(const id of ids){const t=taskById(id);if(t&&!taskCompleted(t)){state.events.push({id:uid(),taskId:t.id,title:t.title,xp:t.xp,coins:awardCoins(t),area:t.area,kind:t.kind,date:today(),at:new Date().toISOString(),note:content});n++}}save();modal='';pendingText='';pendingIds=[];render();notify(n?`已记录 ${n} 项任务，奖励已发放到冒险币余额`:'已保存今天的日志');return}}
 function clickHandler(e){const btn=e.target.closest('button[data-action]');if(!btn)return;const action=btn.dataset.action,id=btn.dataset.id;if(action==='nav')return navigate(btn.dataset.screen);
+ if(action==='open-character'){modal='character';render();return}
+ if(action==='open-story-create'){modal='story-create';render();return}
+ if(action==='quest-detail'){progressTaskId=id;modal='quest-detail';render();return}
+ if(action==='open-contract'){progressTaskId=id;modal='contract';render();return}
+ if(action==='storyline-win'){
+  if(window.GamingLifeCloud?.status().mode==='cloud'&&!window.GamingLifeCloud.status().canEdit)return notify('云端暂不可编辑');
+  const story=storyFor(id);if(!story)return;
+  if(state.storylineWins[id]){if(!confirm('撤销最终目标达成标记？不影响实际任务 XP 与金币。'))return;delete state.storylineWins[id];}
+  else{if(storylineStats(story).stageRate<1)return notify('请先完成该主线的全部章节步骤');
+    if(!confirm('确认你已经在现实中达成「'+story.goal+'」？此确认不自动发放 XP。'))return;
+    state.storylineWins[id]={at:new Date().toISOString()};
+  }
+  if(save()){render();notify('长期主线状态已更新')}return;
+ }
+ if(action==='contract-toggle'){
+  if(window.GamingLifeCloud?.status().mode==='cloud'&&!window.GamingLifeCloud.status().canEdit)return notify('云端暂不可编辑');
+  const t=taskById(id);if(!t||t.kind!=='main'||t.repeat!=='daily')return;
+  if(t.strictDaily){if(!confirm('停止此后的每日考核？现有 XP 和金币不会变化。'))return;t.strictDaily=false;t.strictSince=null;}
+  else{if(!confirm('确认自愿签订每日主线契约？从今天开始，仅统计未来漏做日，每次 -4 纪律值。请假可豁免，不扣 XP 和金币。'))return;t.strictDaily=true;t.strictSince=today();}
+  t.updatedAt=new Date().toISOString();if(save()){render();notify(t.strictDaily?'每日契约从今天开始生效':'未来每日考核已停止')}return;
+ }
+ if(action==='excuse-day'){
+  if(window.GamingLifeCloud?.status().mode==='cloud'&&!window.GamingLifeCloud.status().canEdit)return notify('云端暂不可编辑');
+  const t=taskById(id),date=btn.dataset.date;
+  if(!t||! /^\d{4}-\d{2}-\d{2}$/.test(date)||!missedContractDays(t).includes(date))return notify('这一天没有待处理的缺勤');
+  const reason=prompt('这天是什么情况？可写：生病、工作冲突、已完成但忘记记录（仅用于请假，不补发 XP）','临时情况');
+  if(reason===null)return;
+  state.excusedDays[t.id+'|'+date]={at:new Date().toISOString(),reason:String(reason).slice(0,100)};
+  if(save()){render();notify('已登记豁免 · 纪律值重新计算')}return;
+ }
  if(action==='cloud-accept-latest'){if(!confirm('这将丢弃当前页面尚未上传的修改，以云端最新版本为准。可以先在设置中手动导出 JSON 备份。确定继续？'))return;cloudAction(()=>window.GamingLifeCloud.choose('cloud'));return}
  if(action==='cloud-mode-on'){
   if(!confirm('切换到云端优先将使用 Supabase 的存档，并清除本设备 IndexedDB、localStorage 的完整游戏记录及旧本机备份（不会自动下载文件）。确认此前的本地进展都已同步，或已自行导出需要保留的备份？'))return;
