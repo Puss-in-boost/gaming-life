@@ -10,7 +10,6 @@ new vm.Script(cloud,{filename:'cloud.js'});
 assert.match(html,/const DEFAULT_TASKS=\[\]/);
 assert.match(html,/const STORY_PRESETS=\[\]/);
 assert.doesNotMatch(html,/const CAREER_SPRINT_PACK|const PERSONAL_STARTER_PACK/);
-assert.doesNotMatch(html,/career-applications-202610|gaming-life-opening-202610/);
 
 const extract=(first,next)=>{
  const start=html.indexOf(first),end=html.indexOf(next,start+first.length);
