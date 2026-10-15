@@ -85,11 +85,37 @@ const DEFAULT_REWARDS=[
  {id:'good-meal',icon:'🍜',title:'认真犒劳自己一餐',detail:'特别期待的一顿平价美食，参考预算25元（不是额外日常饭钱）。',price:95,rmb:25,category:'低预算',active:true},
  {id:'movie-out',icon:'🍿',title:'简单线下娱乐活动',detail:'平价电影票、展览或活动，参考预算20元；活动真实价格优先。',price:110,rmb:20,category:'低预算',active:true}
 ];
-const DEFAULT=()=>({version:1,createdAt:new Date().toISOString(),tasks:structuredClone(DEFAULT_TASKS),events:[],notes:[],milestones:{},modes:{},sideChoice:{},mainId:'thesis',secondaryMainId:null,questProgress:{},progressHistory:[],rewards:structuredClone(DEFAULT_REWARDS),redemptions:[],legacyCoinCredit:0,rewardEconomyVersion:2,monthlyRewardBudgetRmb:30,equippedTitle:''});
+
+const STORY_PRESETS=[
+ {id:'graduation-arc',title:'毕业试炼',goal:'完成硕士论文修改、送审和毕业相关流程，以真实学校安排为准。',source:'内置规划',chapters:[{id:'revision',title:'第一章 · 论文定稿',goal:'完成可核实的论文修改和提交准备'},{id:'review',title:'第二章 · 送审与反馈',goal:'按学院流程完成审查及反馈处理'},{id:'finish',title:'第三章 · 毕业收官',goal:'完成真实答辩及毕业事项'}]},
+ {id:'career-arc',title:'职业启程',goal:'完成简历定稿、真实岗位投递并建立可持续的求职流程，最终获得适合的工作机会。',source:'内置规划',chapters:[{id:'resume',title:'第一章 · 整备装备',goal:'完成简历与岗位方向准备'},{id:'shortlist',title:'第二章 · 侦察岗位',goal:'筛选并核对合适的岗位'},{id:'apply',title:'第三章 · 正式出征',goal:'提交真实申请并持续跟进'}]}
+];
+const LEGACY_STORY_STEPS={
+ thesis:['graduation-arc','revision',12],
+ 'gaming-life-opening-202610:graduation-progress':['graduation-arc','revision',12],
+ 'career-applications-202610:resume-v1':['career-arc','resume',1],
+ 'career-applications-202610:position-shortlist':['career-arc','shortlist',1],
+ 'career-applications-202610:first-three-applications':['career-arc','apply',1],
+ 'career-applications-202610:weekly-five-applications':['career-arc','apply',4]
+};
+
+const DEFAULT=()=>({version:1,createdAt:new Date().toISOString(),tasks:structuredClone(DEFAULT_TASKS),storylines:structuredClone(STORY_PRESETS),excusedDays:{},events:[],notes:[],milestones:{},modes:{},sideChoice:{},mainId:'thesis',secondaryMainId:null,questProgress:{},progressHistory:[],rewards:structuredClone(DEFAULT_REWARDS),redemptions:[],legacyCoinCredit:0,rewardEconomyVersion:2,monthlyRewardBudgetRmb:30,equippedTitle:''});
 // Preserve the old 1 XP : 1 coin wallet and redemption history exactly once.
 // Existing claims are sealed as legacy; new claims earn independent coin rewards.
 function migrate(v){
  const base={...DEFAULT(),...v};
+ base.storylines=Array.isArray(v.storylines)?v.storylines:structuredClone(STORY_PRESETS);
+ base.excusedDays=v.excusedDays&&typeof v.excusedDays==='object'&&!Array.isArray(v.excusedDays)?v.excusedDays:{};
+ base.tasks=(Array.isArray(v.tasks)?v.tasks:structuredClone(DEFAULT_TASKS)).map(t=>{
+   const inherited=LEGACY_STORY_STEPS[t.packKey||t.id];
+   return {...t,
+     storylineId:t.storylineId??(inherited?inherited[0]:null),
+     chapterId:t.chapterId??(inherited?inherited[1]:null),
+     targetCount:Number.isInteger(t.targetCount)&&t.targetCount>=1?t.targetCount:(inherited?inherited[2]:1),
+     publishedAt:t.publishedAt||null, updatedAt:t.updatedAt||null,
+     sourceLabel:t.sourceLabel||(t.packKey?'历史任务包':'历史任务 · 首发日期未记录')
+   };
+ });
  base.questProgress=v.questProgress&&typeof v.questProgress==='object'&&!Array.isArray(v.questProgress)?v.questProgress:{};
  base.progressHistory=Array.isArray(v.progressHistory)?v.progressHistory:[];
  if(v.rewardEconomyVersion===2){
