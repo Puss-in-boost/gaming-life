@@ -252,6 +252,13 @@ const PERSONAL_STARTER_PACK={format:'gaming-life.quest-pack',version:1,packId:'g
 {id:'local-explore',title:'探索支线：发现一件生活小乐趣',detail:'尝试免费城市漫步、排球、喜欢的书或新的兴趣体验。',kind:'side',area:'explore',repeat:'weekly',xp:15,coins:8}
 ]};
 
+
+CAREER_SPRINT_PACK.storyline=structuredClone(STORY_PRESETS.find(a=>a.id==='career-arc'));
+for(const q of CAREER_SPRINT_PACK.quests){q.chapterId=({ 'resume-v1':'resume','position-shortlist':'shortlist','first-three-applications':'apply','weekly-five-applications':'apply'})[q.id];q.targetCount=q.id==='weekly-five-applications'?4:1}
+PERSONAL_STARTER_PACK.storyline=structuredClone(STORY_PRESETS.find(a=>a.id==='graduation-arc'));
+PERSONAL_STARTER_PACK.quests[0].chapterId='revision';
+PERSONAL_STARTER_PACK.quests[0].targetCount=12;
+
 function checkPack(raw){
  if(typeof raw!=='string'||raw.length>45000)throw Error('任务包文本过长（最多45KB）');
  let pack;try{pack=JSON.parse(raw)}catch(e){throw Error('不是有效的 JSON，请直接复制完整任务包')}
@@ -269,26 +276,63 @@ function checkPack(raw){
   if(typeof detail!=='string'||detail.length>250)throw Error(`任务 ${id} 的说明过长`);
   if(!['main','side'].includes(q.kind)||!AREAS.some(a=>a[0]===q.area)||!['once','daily','weekly'].includes(q.repeat))throw Error(`任务 ${id} 的类别/领域/周期无效`);
   if(!Number.isInteger(q.xp)||q.xp<5||q.xp>80)throw Error(`任务 ${id} 的 XP 应为5–80之间的整数`);if(q.coins!==undefined&&(!Number.isInteger(q.coins)||q.coins<0||q.coins>80))throw Error(`任务 ${id} 的奖励币应为0–80`);
-  normalized.push({id, title:title.trim(),detail:detail.trim(),kind:q.kind,area:q.area,repeat:q.repeat,xp:q.xp,coins:q.coins});
+  if(q.chapterId!==undefined&&(typeof q.chapterId!=='string'||! /^[a-zA-Z0-9_-]{1,60}$/.test(q.chapterId)))throw Error('chapterId 必须是章节 ID');
+  if(q.targetCount!==undefined&&(!Number.isInteger(q.targetCount)||q.targetCount<1||q.targetCount>100))throw Error('targetCount 必须为 1–100');
+  normalized.push({id, title:title.trim(),detail:detail.trim(),kind:q.kind,area:q.area,repeat:q.repeat,xp:q.xp,coins:q.coins,chapterId:q.chapterId??null,targetCount:q.targetCount??1});
  }
  if(pack.focusId!==undefined&&pack.focusId!==null&&(!used.has(pack.focusId)||normalized.find(q=>q.id===pack.focusId)?.kind!=='main'))throw Error('focusId 必须指向本任务包中的主线任务');
- return{packId:pack.packId,title:pack.title.trim(),quests:normalized,focusId:pack.focusId||null};
+ let story=null;
+ if(pack.storyline!==undefined){
+   const a=pack.storyline;
+   if(!a||typeof a!=='object'||Array.isArray(a)||typeof a.id!=='string'||! /^[a-zA-Z0-9_-]{1,60}$/.test(a.id)||
+      typeof a.title!=='string'||!a.title.trim()||a.title.length>80||typeof a.goal!=='string'||!a.goal.trim()||a.goal.length>250||
+      !Array.isArray(a.chapters)||a.chapters.length<1||a.chapters.length>12)throw Error('storyline 主线目标或章节无效');
+   const seen=new Set();
+   story={id:a.id,title:a.title.trim(),goal:a.goal.trim(),chapters:a.chapters.map(c=>{
+      if(!c||typeof c.id!=='string'||! /^[a-zA-Z0-9_-]{1,60}$/.test(c.id)||seen.has(c.id)||
+         typeof c.title!=='string'||!c.title.trim()||c.title.length>80||
+         (c.goal!==undefined&&(typeof c.goal!=='string'||c.goal.length>200)))throw Error('章节 ID、名称或目标无效');
+      seen.add(c.id);return{id:c.id,title:c.title.trim(),goal:String(c.goal||'').trim()};
+   })};
+ }
+ if(normalized.some(q=>q.chapterId&&(!story||!story.chapters.some(c=>c.id===q.chapterId))))throw Error('任务 chapterId 没有对应的 storyline 章节');
+ return{packId:pack.packId,title:pack.title.trim(),quests:normalized,focusId:pack.focusId||null,storyline:story};
 }
 function packKey(packId,id){return packId+':'+id}
 function packPreview(){if(!validatedPack)return '';const pack=validatedPack;let added=0,updated=0;const lines=pack.quests.map(q=>{const found=state.tasks.find(t=>t.packKey===packKey(pack.packId,q.id));found?updated++:added++;return `<div class="activity"><div class="activity-main"><strong>${safe(q.title)}</strong><small>${found?'更新已导入任务':'新增任务'} · ${q.kind==='main'?'主线':'支线'} · ${q.xp} XP · ${q.repeat==='daily'?'每天':q.repeat==='weekly'?'每周':'仅一次'}</small></div></div>`}).join('');return `<div class="pack-preview"><h3>「${safe(pack.title)}」预览</h3><p class="hint">新增 ${added} 项 · 更新 ${updated} 项；不会自动完成任务或改变既有 XP。</p>${lines}</div>`}
 function importPack(pack){
- // Commit is intentionally non-destructive: no activity/event records are changed or removed.
- let mainId=null;
- for(const q of pack.quests){const key=packKey(pack.packId,q.id);let t=state.tasks.find(t=>t.packKey===key);
-  if(t){Object.assign(t,{title:q.title,detail:q.detail,kind:q.kind,area:q.area,repeat:q.repeat,xp:q.xp,coins:q.coins===undefined?coinsForTask(q):q.coins,icon:areaInfo(q.area)[2],active:true});}
-  else{t={id:uid(),packKey:key,title:q.title,detail:q.detail,kind:q.kind,area:q.area,repeat:q.repeat,xp:q.xp,coins:q.coins===undefined?coinsForTask(q):q.coins,icon:areaInfo(q.area)[2],active:true};state.tasks.push(t)}
-  if(q.id===pack.focusId&&q.kind==='main')mainId=t.id;
+ // User-confirmed upsert only; never fabricate historic completion or publication dates.
+ const now=new Date().toISOString();
+ if(pack.storyline){
+   const old=storyFor(pack.storyline.id);
+   if(old){Object.assign(old,{title:pack.storyline.title,goal:pack.storyline.goal,chapters:pack.storyline.chapters,updatedAt:now});}
+   else state.storylines.push({...pack.storyline,source:'任务包：'+pack.title,createdAt:now,updatedAt:now});
  }
- if(mainId&&mainId!==state.mainId){const previous=taskById(state.mainId);if(previous&&previous.kind==='main'&&previous.active!==false)state.secondaryMainId=previous.id;state.mainId=mainId;}
- if(pack.packId===PERSONAL_STARTER_PACK.packId&&!Object.hasOwn(state.sideChoice,today()))state.sideChoice[today()]=state.tasks.filter(t=>t.packKey===pack.packId+':training-safe'||t.packKey===pack.packId+':sleep-transition').map(t=>t.id);
+ let mainId=null;
+ for(const q of pack.quests){
+   const key=packKey(pack.packId,q.id);
+   let t=state.tasks.find(item=>item.packKey===key);
+   const values={title:q.title,detail:q.detail,kind:q.kind,area:q.area,repeat:q.repeat,xp:q.xp,
+      coins:q.coins===undefined?coinsForTask(q):q.coins,icon:areaInfo(q.area)[2],active:true,
+      storylineId:pack.storyline?.id??t?.storylineId??null,
+      chapterId:q.chapterId??t?.chapterId??null,
+      targetCount:q.targetCount,
+      sourceLabel:t?.sourceLabel||'任务包：'+pack.title,updatedAt:now};
+   if(t){Object.assign(t,values)}
+   else{t={id:uid(),packKey:key,publishedAt:now,...values};state.tasks.push(t)}
+   if(q.id===pack.focusId&&q.kind==='main')mainId=t.id;
+ }
+ if(mainId&&mainId!==state.mainId){
+   const previous=taskById(state.mainId);
+   if(previous&&previous.kind==='main'&&previous.active!==false)state.secondaryMainId=previous.id;
+   state.mainId=mainId;
+ }
+ if(pack.packId===PERSONAL_STARTER_PACK.packId&&!Object.hasOwn(state.sideChoice,today()))
+    state.sideChoice[today()]=state.tasks.filter(t=>t.packKey===pack.packId+':training-safe'||t.packKey===pack.packId+':sleep-transition').map(t=>t.id);
  if(!save())return;
- validatedPack=null;modal='';navigate('today');notify(`任务包「${pack.title}」已导入，历史进度保留`);
+ validatedPack=null;modal='';navigate('today');notify('任务包「'+pack.title+'」已导入，任务来源与主线章节已经更新');
 }
+
 
 function storyFor(id){return (state.storylines||[]).find(x=>x.id===id)}
 function taskStory(t){return t.storylineId?storyFor(t.storylineId):null}
