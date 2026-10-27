@@ -1,4 +1,4 @@
-name: Gaming Life V1.7 Regression
+name: Gaming Life regression (V1.7–V1.9)
 on:
   pull_request:
     paths:
@@ -6,6 +6,8 @@ on:
       - cloud.js
       - tests/v17.test.mjs
       - tests/v18.test.mjs
+      - tests/v19.test.mjs
+      - adventure.css
       - .github/workflows/verify-v17.yml
   push:
     branches: [main]
@@ -14,6 +16,8 @@ on:
       - cloud.js
       - tests/v17.test.mjs
       - tests/v18.test.mjs
+      - tests/v19.test.mjs
+      - adventure.css
 jobs:
   v17-unit:
     runs-on: ubuntu-latest
@@ -23,4 +27,4 @@ jobs:
         with:
           node-version: '22'
       - name: Verify app syntax and V1.7 data rules
-        run: node tests/v17.test.mjs && node tests/v18.test.mjs
+        run: node tests/v17.test.mjs && node tests/v18.test.mjs && node tests/v19.test.mjs

@@ -1,0 +1,138 @@
+/* Gaming Life V1.9 — Adventure Camp: visual-only, no data or backend changes */
+:root{
+  --bg:#0b121d;--surface:#172331;--surface2:#1d2d3b;--stroke:#314351;
+  --text:#f5f0de;--muted:#aebdc5;--mint:#96e4bb;--purple:#b9b7fa;
+  --gold:#ffd88a;--danger:#ffaaaa;--radius:20px;
+  --shadow:0 20px 46px rgba(0,0,0,.2)
+}
+body{background:radial-gradient(ellipse 700px 500px at 85% -7%,#213d4b 0,transparent 78%),radial-gradient(ellipse 600px 500px at 0 65%,#142537 0,transparent 75%),var(--bg);color:var(--text)}
+.shell{max-width:1260px;grid-template-columns:232px minmax(0,1fr)}
+.sidebar{background:linear-gradient(180deg,rgba(24,41,51,.9),rgba(12,24,35,.9));border-color:#30434d;padding:34px 19px}
+.brand{letter-spacing:-.6px;font-size:21px}.brand-icon{background:linear-gradient(145deg,#4d735d,#b08c62);box-shadow:0 4px 22px #eccd7540}
+.nav-button{min-height:48px;border:1px solid transparent;font-weight:750;transition:background .18s,border-color .18s,transform .18s}
+.nav-button.active{color:#f9edcd;background:linear-gradient(90deg,#3c534f,#263d45);border-color:#547069;box-shadow:inset 3px 0 #e4c482}
+.nav-button:hover{transform:translateX(3px);background:#2b4048}
+.sidebar-note{line-height:1.65;background:rgba(141,192,162,.07);border-color:#344e4c}
+.main{padding-top:30px;max-width:1070px}
+.home-topline{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:14px}
+.home-topline .eyebrow{color:#e7c782;letter-spacing:2.3px}
+.home-hero{position:relative;overflow:hidden;isolation:isolate;min-height:360px;padding:30px 32px;border-radius:28px;border-color:#54706a;background:linear-gradient(110deg,#1b3740 3%,#273b45 62%,#334a4c 100%);box-shadow:0 21px 60px #020a1480}
+.home-hero:before{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;background:radial-gradient(circle at 88% 23%,#f8c58427 0,transparent 30%),linear-gradient(90deg,#08151d33,transparent 80%)}
+.hero-content{position:relative;z-index:2;max-width:690px}
+.hero-kicker{display:flex;gap:11px;align-items:center;flex-wrap:wrap;margin-bottom:10px}
+.hero-kicker .chip{border-color:#8db19e6d;background:#16333a;color:#ddf0d3}
+.hero-kicker .chapter{color:#f6d795;font-size:11px;letter-spacing:1.6px;font-weight:850}
+.home-hero h2{font-family:Georgia,"Songti SC","SimSun",serif;font-size:clamp(27px,3.3vw,43px);font-weight:800;letter-spacing:1px;line-height:1.19;margin:0 0 10px;text-shadow:0 3px 13px #071316}
+.home-hero .hero-sub{color:#c5d4cc;font-size:13px;max-width:420px;margin:0 0 22px}
+.hero-focus{max-width:480px;border-left:3px solid #efc982;padding:3px 0 5px 15px;margin:0 0 22px;background:linear-gradient(90deg,#101f2c40,transparent)}
+.hero-focus span{display:block;color:#d7bb87;letter-spacing:1.2px;font-size:11px;font-weight:850;margin-bottom:3px}
+.hero-focus strong{display:block;font-size:clamp(16px,2vw,20px);color:#fffaf0;line-height:1.45;overflow-wrap:anywhere}
+.hero-buttons{display:flex;gap:9px;align-items:center;flex-wrap:wrap;margin-bottom:24px}
+.home-hero .btn-primary{padding:12px 21px;border-radius:12px;background:linear-gradient(140deg,#ffe1a7,#e7b971);color:#292617;box-shadow:0 6px 22px #f4bd7f3b;font-weight:900}
+.home-hero .btn-primary:hover{background:#ffe7bf}
+.home-hero .btn-ghost{border:1px solid #64807a;background:#213c42bb;color:#e6f1e5}
+.hero-level-row{display:flex;align-items:center;gap:13px;max-width:515px}
+.hero-level-row .level{width:55px;min-width:55px;height:55px;border-radius:15px;background:linear-gradient(140deg,#7d906a,#45665d);box-shadow:0 6px 21px #071a1c55}
+.hero-level-row .level b{font-size:21px}
+.hero-level-row .level small{font-size:9px}
+.hero-level-copy{flex:1;min-width:0}
+.hero-level-copy .xp-info{margin:0 0 7px;color:#dde5dc;font-size:11px}
+.hero-level-copy .progress{height:8px;background:#132a31;border:1px solid #3b5f5a}
+.hero-level-copy .progress span{background:linear-gradient(90deg,#f5c878,#92ddb0)}
+.hero-sum{color:#c2d2d0;font-size:11px;margin-top:8px}
+.world-art{position:absolute;inset:0 0 0 auto;width:43%;z-index:0;overflow:hidden;pointer-events:none;opacity:.96}
+.world-art .moon{position:absolute;width:130px;height:130px;border-radius:50%;background:#f6d5a0;box-shadow:0 0 0 16px #f3d7a00b,0 0 80px #eec88244;right:16%;top:10%}
+.world-art .star{position:absolute;width:3px;height:3px;background:#fae8b6;border-radius:50%;box-shadow:0 0 9px #fff9}
+.world-art .s1{right:11%;top:13%}.world-art .s2{right:59%;top:19%}.world-art .s3{right:70%;top:8%}.world-art .s4{right:37%;top:43%}.world-art .s5{right:85%;top:37%}
+.world-art .ridge{position:absolute;bottom:-28%;width:125%;height:69%;transform:rotate(-12deg);border-radius:52% 48% 0 0;background:linear-gradient(155deg,#426956,#182c3c);right:-26%}
+.world-art .ridge.back{bottom:-21%;right:-45%;height:62%;background:#537367;transform:rotate(15deg)}
+.world-art .cabin{position:absolute;bottom:15%;right:19%;width:110px;height:90px}
+.world-art .cabin:before{content:"";position:absolute;left:8px;top:20px;width:98px;height:72px;background:#172b2f;border:3px solid #6d8068;border-radius:4px 4px 7px 7px;box-shadow:inset 0 -14px #0e1c27}
+.world-art .cabin:after{content:"";position:absolute;left:-4px;top:0;width:112px;height:48px;background:#795b4b;clip-path:polygon(50% 0,100% 80%,92% 100%,50% 31%,9% 100%,0 81%);filter:drop-shadow(0 4px 0 #2b4040)}
+.world-art .door{position:absolute;left:43px;top:45px;width:29px;height:46px;background:linear-gradient(#f0c876,#9f693f);box-shadow:0 0 45px #f2bc66a8;z-index:2;border:3px solid #715340;border-radius:12px 12px 2px 2px}
+.world-art .ground{position:absolute;width:120%;height:10%;bottom:0;right:-12%;background:linear-gradient(0deg,#132932,#1c3a39);filter:blur(1px)}
+.mission-kicker{color:#f4ca81;font-size:11px;font-weight:900;letter-spacing:1.8px}
+.adventure-section-head{margin:26px 0 12px;display:flex;justify-content:space-between;gap:12px;align-items:center}
+.adventure-section-head h2{font-size:20px;letter-spacing:-.25px;margin:2px 0 0}
+.adventure-section-head p{color:#a9bac0;font-size:12px;margin:3px 0 0}
+.adventure-section-head .btn{font-weight:750}
+.quest{border-color:#3c515b;background:linear-gradient(130deg,#1a2a38,#172331);box-shadow:0 7px 22px #07101b22;transition:border-color .18s,transform .18s,box-shadow .18s;padding:18px 21px}
+.quest:hover{border-color:#698d7f;box-shadow:0 12px 28px #050d1a55;transform:translateY(-1px)}
+.quest.mainquest{border:1px solid #ae946a;background:linear-gradient(115deg,#293936,#1b3439 62%,#202f37);box-shadow:0 10px 28px #040e1955}
+.quest.finished{opacity:1;border-color:#3e6758;background:linear-gradient(100deg,#1e3c38,#1b2b36)}
+.quest h3{font-size:18px;line-height:1.38}
+.quest p{line-height:1.5;font-size:12px}
+.quest-icon{width:50px;height:50px;flex-basis:50px;border:1px solid #607c6a;background:linear-gradient(135deg,#3a5c50,#2b4152);font-size:24px;box-shadow:inset 0 1px #a4c4a52b}
+.quest-copy{max-width:670px}
+.quest .quest-origin{display:none}
+.quest .quest-note:not(.quest-origin){margin:9px 0 0}
+.quest .meta{margin-top:10px}
+.quest .xp-pill{background:#5e4d34;color:#ffe1a7;font-weight:900}
+.quest-badge{display:inline-block;color:#a9dfc2;font-size:10px;font-weight:900;letter-spacing:1.6px;margin-bottom:5px}
+.quest.mainquest .quest-badge{color:#f3d299}
+.quest-actions .btn-primary{background:#f1cc89;color:#352719;box-shadow:0 3px 13px #e9b9652b}
+.quest-actions .btn-primary:hover{background:#ffdc9d}
+.quest-actions .btn{min-height:37px}
+.quest-actions .btn-ghost{background:#253b43}
+.adventure-quick{border:1px solid #b69c6d;border-radius:22px;background:linear-gradient(120deg,#2c403c,#21303b);padding:22px;margin-top:18px}
+.adventure-quick h2{font-family:Georgia,"Songti SC",serif;font-size:23px;margin:3px 0 6px}
+.adventure-quick p{color:#c6d5cd;font-size:13px}
+.adventure-quick form{display:flex;gap:9px;margin:14px 0 0}
+.adventure-quick input{background:#0d202a;border:1px solid #698374;color:#fff7e4;padding:12px 13px;border-radius:11px;min-width:0;flex:1}
+.adventure-quick .btn-primary{background:#f3ce8b;color:#332618}
+.adventure-finished{padding:18px 22px;margin-top:16px;border-radius:19px;background:#1e3934;border:1px solid #54846b}
+.adventure-finished strong{display:block;font-size:16px}
+.adventure-finished p{font-size:12px;color:#b7d0c3;margin:5px 0 10px}
+.adventure-trail{padding:17px 21px;background:linear-gradient(115deg,#172d36,#1b2937);border:1px solid #344f53;border-radius:19px;margin-top:15px}
+.adventure-trail-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.adventure-trail-head strong{font-size:13px;color:#e5dcc5}
+.adventure-trail-head span{font-size:11px;color:#a8bdb9}
+.trail-days{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:8px;margin-top:13px}
+.trail-day{text-align:center;color:#9db2b9;font-size:11px}
+.trail-day span{display:grid;place-items:center;margin:0 auto 7px;width:29px;height:29px;border:1px solid #46606b;background:#223541;border-radius:10px;color:#8298a4;font-size:14px}
+.trail-day.hit span{background:#44684e;border-color:#a7d5a3;color:#ffe4a1}
+.trail-day.current span{box-shadow:0 0 0 2px #a3cdbf88}
+.story-peek,.adventure-tools,.adventure-diary,.parallel-mission{border-radius:17px;background:#172633;border:1px solid #344b57;margin-top:16px;padding:14px 18px}
+.story-peek summary,.adventure-tools summary,.adventure-diary summary,.parallel-mission summary{color:#d6e3db;font-weight:800;font-size:13px;cursor:pointer}
+.story-peek .panel{margin-top:13px}
+.adventure-tools .bridge{margin-top:12px;background:#1c3437}
+.adventure-tools .bridge-actions{align-items:flex-start}
+.adventure-tools summary::marker{color:#a8d6bc}
+.reward-teaser{background:linear-gradient(105deg,#403a32,#253a3c);border:1px solid #806e51;box-shadow:inset 0 1px #d5b57b20;margin-top:20px}
+.reward-teaser-icon{background:#70583c}
+.reward-teaser .btn-primary{background:#f4ce8f;color:#382b1f}
+.reward-wallet{background:linear-gradient(135deg,#594936,#263b42)}
+.reward-card{background:#1b2936;border-color:#425761}
+.reward-card .btn-primary{background:#e7c27e;color:#2f261b}
+.panel{background:#182633;border-color:#354955}
+.btn{transition:transform .16s,background .16s,border-color .16s}
+.btn:hover{border-color:#739787}
+.btn-primary{background:#a7e3bd;color:#1a3026}
+.progress>span{background:linear-gradient(90deg,#f1cc7e,#9ee4bd)}
+.toast{border:1px solid #8dc5a8;background:#233d39;color:#f9f6e7}
+.xp-celebration{background:linear-gradient(130deg,#40523d,#263e48);border-color:#e8c782}
+.xp-celebration b{color:#f9d799}
+.bottomnav{border-color:#365257;background:#12252bea}
+@media(max-width:950px){.shell{grid-template-columns:180px minmax(0,1fr)}.main{padding:25px 23px 88px}.world-art{opacity:.8;width:48%}}
+@media(max-width:680px){
+  .shell{display:block}.sidebar{display:none}.main{padding:16px 14px 107px}
+  .home-topline{margin:3px 4px 13px}.home-topline .eyebrow{font-size:10px;letter-spacing:1.3px}
+  .home-hero{min-height:360px;padding:21px;border-radius:23px}
+  .world-art{width:70%;opacity:.4}.world-art .moon{width:100px;height:100px;right:6%;top:10%}.world-art .cabin{right:6%;bottom:14%}
+  .home-hero h2{font-size:30px;max-width:280px}
+  .home-hero .hero-sub{font-size:12px;max-width:255px}
+  .hero-focus{max-width:270px}
+  .hero-buttons{gap:8px;margin-bottom:18px}.hero-buttons .btn{font-size:12px;min-height:40px}
+  .hero-level-row{max-width:100%}
+  .adventure-section-head{margin:21px 0 11px}.adventure-section-head h2{font-size:18px}
+  .quest{padding:15px}.quest:hover{transform:none}
+  .quest-actions{justify-content:stretch}.quest-actions .btn{flex:1 1 auto}
+  .quest-icon{width:42px;height:42px;flex-basis:42px}
+  .adventure-quick{padding:17px}.adventure-quick form{flex-direction:column}.adventure-quick .btn{width:100%}
+  .trail-days{gap:3px}.trail-day span{width:27px;height:27px}
+  .reward-teaser{padding:14px}
+  .adventure-tools,.adventure-diary,.story-peek,.parallel-mission{padding:13px 14px}
+  .bottomnav button.active{color:#f3d19a}
+  .bottomnav button{min-height:48px}
+}
+@media(prefers-reduced-motion:reduce){.quest:hover,.nav-button:hover{transform:none}}
