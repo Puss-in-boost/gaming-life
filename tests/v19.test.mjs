@@ -45,7 +45,7 @@ const ctx=vm.createContext({
  statusLabel:s=>({todo:'未开始',doing:'进行中',review:'待确认',done:'已完成'})[s],
  taskStory:()=>null, chapterFor:()=>null, missionCount:()=>0, missionGoal:()=>1,missionRatio:()=>0,
  coinsForTask:t=>t.coins??10,areaInfo:()=>[null,null,'📚'],
- levelInfo:()=>({level:1,earned:25,need:100,pct:25}),
+ idleStats:()=>({energy:100}),levelInfo:()=>({level:1,earned:25,need:100,pct:25}),
  totalXP:()=>25,coinBalance:()=>12,safe:x=>String(x),rewardTeaser:()=>'<div class="reward-teaser">奖励</div>'
 });
 vm.runInContext(extract('function dailyTrail()','function getMain()'),ctx);
