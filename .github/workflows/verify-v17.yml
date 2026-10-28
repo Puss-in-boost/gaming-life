@@ -6,9 +6,7 @@ on:
       - cloud.js
       - tests/v17.test.mjs
       - tests/v18.test.mjs
-      - tests/v19.test.mjs
-      - tests/v110.test.mjs
-      - adventure.css
+      - tests/v19.test.mjs      - adventure.css
       - .github/workflows/verify-v17.yml
   push:
     branches: [main]
@@ -31,3 +29,4 @@ jobs:
       - name: Verify app syntax and V1.7 data rules
         run: node tests/v17.test.mjs && node tests/v18.test.mjs && node tests/v19.test.mjs && node tests/v110.test.mjs
       - tests/v110.test.mjs
+
