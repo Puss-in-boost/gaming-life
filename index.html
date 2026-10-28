@@ -89,6 +89,7 @@
   <nav class="bottomnav" aria-label="移动端导航" id="nav-bottom"></nav>
   <div id="modal-root"></div><div id="toast-root" role="status" aria-live="polite"></div><div id="reward-root" role="status" aria-live="polite"></div>
 <script src="./cloud.js"></script>
+<script src="./missions.js"></script>
 <script>
 'use strict';
 (function(){
@@ -184,6 +185,7 @@ function migrate(v){
 }
 function load(){try{const v=JSON.parse(localStorage.getItem(KEY));if(v&&v.version===1&&Array.isArray(v.tasks)&&Array.isArray(v.events)&&Array.isArray(v.notes))return migrate(v);}catch(e){}return DEFAULT()}
 let state=load(),screen='today',modal='',toastTimer=null,pendingText='',pendingIds=[],validatedPack=null,rewardTimer=null,progressTaskId=null;
+const MISSION=window.GamingLifeMissions;
 let lastDate='';
 const el=(id)=>document.getElementById(id);
 const safe=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -197,28 +199,32 @@ const taskCompleted=(t,s=today())=>state.events.some(e=>e.taskId===t.id&&(t.repe
 const eventFor=(t,s=today())=>state.events.find(e=>e.taskId===t.id&&(t.repeat==='once'||(t.repeat==='daily'&&e.date===s)||(t.repeat==='weekly'&&mondayKey(e.date)===mondayKey(s))));
 // V1.4: Period-bound progress. Never grant XP or coins until explicit completion.
 function progressKey(t,s=today()){return t.id+'@'+(t.repeat==='once'?'once':t.repeat==='weekly'?mondayKey(s):s)}
-function progressFor(t){const r=state.questProgress?.[progressKey(t)];return r&&['doing','review'].includes(r.status)?r:{status:'todo',note:''}}
+function progressFor(t){const r=state.questProgress?.[progressKey(t)];return r&&['doing','review'].includes(r.status)?r:{status:'todo',note:'',percent:0}}
+function missionGate(t){return MISSION.activation(t,state.tasks,state.events,today())}
+function missionPercent(t){return MISSION.percent(t,progressFor(t),taskCompleted(t))}
 function questStatus(t){return taskCompleted(t)?'done':progressFor(t).status}
 function statusLabel(s){return ({todo:'未开始',doing:'进行中',review:'待确认',done:'已完成'})[s]||'未开始'}
 function touchMeaningfulAction(){if(!state.adventureIdle)state.adventureIdle={enabled:true,lastActionOn:today()};state.adventureIdle.lastActionOn=today()}
-function saveProgress(t,status,note){
- if(!t||!['todo','doing','review'].includes(status)||taskCompleted(t))return false;
+function saveProgress(t,status,note,percent=null){
+ if(!t||!['todo','doing','review'].includes(status)||taskCompleted(t)||!missionGate(t).ready)return false;
  const key=progressKey(t), old=progressFor(t), clean=String(note||'').trim().slice(0,240);
- if(old.status===status&&old.note===clean)return true;
+ const next=percent===null?MISSION.percent(t,old,false):Number(percent);
+ if(!Number.isInteger(next)||next<0||next>99)return false;
+ if(old.status===status&&old.note===clean&&MISSION.percent(t,old,false)===next)return true;
  if(!state.questProgress||typeof state.questProgress!=='object'||Array.isArray(state.questProgress))state.questProgress={};
- if(status==='todo'&&!clean)delete state.questProgress[key];
- else state.questProgress[key]={status,note:clean,updatedAt:new Date().toISOString()};
+ if(status==='todo'&&!clean&&next===0)delete state.questProgress[key];
+ else state.questProgress[key]={status,note:clean,percent:next,updatedAt:new Date().toISOString()};
  if(!Array.isArray(state.progressHistory))state.progressHistory=[];
- state.progressHistory.push({id:uid(),taskId:t.id,title:t.title,status,note:clean,date:today(),at:new Date().toISOString()});
+ state.progressHistory.push({id:uid(),taskId:t.id,title:t.title,status,note:clean,percent:next,date:today(),at:new Date().toISOString()});
  state.progressHistory=state.progressHistory.slice(-150);
  // Remove stale period state from the index; the limited history remains available.
  const keys=Object.keys(state.questProgress);
  if(keys.length>350){for(const k of keys.slice(0,keys.length-250))delete state.questProgress[k]}
- if(clean||status==='review')touchMeaningfulAction();
+ if(clean||status==='review'||next!==MISSION.percent(t,old,false))touchMeaningfulAction();
  return save();
 }
-function secondaryMain(){const first=getMain();const t=taskById(state.secondaryMainId);if(t&&t.active!==false&&t.kind==='main'&&t.id!==first?.id)return t;return activeTasks().find(x=>x.kind==='main'&&x.id!==first?.id)||null}
-function focusMain(id){const t=taskById(id),old=getMain();if(!t||t.kind!=='main'||t.active===false)return; if(old&&old.id!==id)state.secondaryMainId=old.id;state.mainId=id;if(save()){modal='';render();notify('今日优先主线已切换，另一条仍会保留')}}
+function secondaryMain(){const first=getMain();const t=taskById(state.secondaryMainId);if(t&&t.active!==false&&t.kind==='main'&&missionGate(t).ready&&t.id!==first?.id)return t;return activeTasks().find(x=>x.kind==='main'&&missionGate(x).ready&&x.id!==first?.id)||null}
+function focusMain(id){const t=taskById(id),old=getMain();if(!t||t.kind!=='main'||t.active===false||!missionGate(t).ready)return; if(old&&old.id!==id)state.secondaryMainId=old.id;state.mainId=id;if(save()){modal='';render();notify('今日优先主线已切换，另一条仍会保留')}}
 const totalXP=()=>state.events.reduce((x,e)=>x+(Number(e.xp)||0),0)+Object.values(state.milestones).reduce((x,m)=>x+(m?.xp||0),0);
 const coinsForTask=t=>Number.isInteger(t.coins)&&t.coins>=0&&t.coins<=80?t.coins:(t.kind==='main'?Math.min(40,Math.round((Number(t.xp)||0)/2)):Math.min(20,Math.round((Number(t.xp)||0)/2)));
 const milestoneCoins=m=>Number.isInteger(m?.coins)?m.coins:Math.round((Number(m?.xp)||0)/2);
@@ -282,7 +288,7 @@ function notify(message){const root=el('toast-root');root.innerHTML=`<div class=
 function navigate(target){screen=target;modal='';render();window.scrollTo({top:0,behavior:'instant'})}
 function navRender(){let markup=NAV.map(([id,label,icon])=>`<button type="button" class="nav-button ${screen===id?'active':''}" data-action="nav" data-screen="${id}" aria-current="${screen===id?'page':'false'}"><span class="nav-icon" aria-hidden="true">${icon}</span>${label}</button>`).join('');el('nav-side').innerHTML=markup;el('nav-bottom').innerHTML=NAV.map(([id,label,icon])=>`<button type="button" class="${screen===id?'active':''}" data-action="nav" data-screen="${id}" aria-label="${label}" aria-current="${screen===id?'page':'false'}"><span aria-hidden="true">${icon}</span>${label}</button>`).join('')}
 function celebration(xp,oldLevel,title,coins=0){const now=levelInfo(totalXP());const up=now.level>oldLevel;const root=el('reward-root');root.innerHTML=`<div class="xp-celebration ${up?'levelup':''}"><span class="reward-title">${up?'LEVEL UP · 等级提升！':'QUEST CLEAR · 任务完成'}</span><b>${up?'LV. '+now.level:'+'+xp+' XP'}</b><span>🪙 +${coins} 奖励币</span><span>${safe(title)}</span>${up?`<span>获得 ${xp} XP · 新等级已解锁</span>`:''}</div>`;clearTimeout(rewardTimer);rewardTimer=setTimeout(()=>root.innerHTML='',2500)}
-function completion(t){let v=eventFor(t);if(v){if(coinsEarned()-(Number(v.coins)||0)<coinsSpent())return notify('这次任务的奖励币已用于兑换，无法直接撤销；请先取消未享受的兑换');state.events=state.events.filter(e=>e.id!==v.id);save();notify('已撤销这次任务');}else{const oldLevel=levelInfo(totalXP()).level,coins=awardCoins(t);state.events.push({id:uid(),taskId:t.id,title:t.title,xp:Number(t.xp)||0,coins,area:t.area,kind:t.kind,date:today(),at:new Date().toISOString(),note:''});touchMeaningfulAction();if(save())celebration(Number(t.xp)||0,oldLevel,t.title,coins);notify(`任务完成！ +${t.xp} XP · 🪙 +${coins}`)}render()}
+function completion(t){let v=eventFor(t);if(!v&&!missionGate(t).ready)return notify('任务尚未触发：'+missionGate(t).reason);if(v){if(coinsEarned()-(Number(v.coins)||0)<coinsSpent())return notify('这次任务的奖励币已用于兑换，无法直接撤销；请先取消未享受的兑换');state.events=state.events.filter(e=>e.id!==v.id);save();notify('已撤销这次任务');}else{const oldLevel=levelInfo(totalXP()).level,coins=awardCoins(t);state.events.push({id:uid(),taskId:t.id,title:t.title,xp:Number(t.xp)||0,coins,area:t.area,kind:t.kind,date:today(),at:new Date().toISOString(),note:''});touchMeaningfulAction();if(save())celebration(Number(t.xp)||0,oldLevel,t.title,coins);notify(`任务完成！ +${t.xp} XP · 🪙 +${coins}`)}render()}
 function uid(){return (crypto?.randomUUID?.()||'id-'+Date.now()+'-'+Math.random().toString(36).slice(2))}
 // AI-free task pack protocol. Only the user can preview/confirm modifications.
 const PACK_FORMAT='gaming-life.quest-pack';
@@ -511,21 +517,21 @@ function hero(){
    </div>
   </section>`;
 }
-function getMain(){let t=taskById(state.mainId);if(t&&t.active!==false&&t.kind==='main'&&!(t.repeat==='once'&&taskCompleted(t)))return t;return activeTasks().find(x=>x.kind==='main'&&!(x.repeat==='once'&&taskCompleted(x)))}
-function currentSides(){const list=activeTasks().filter(x=>x.kind==='side');const saved=state.sideChoice[today()];if(Array.isArray(saved))return saved.map(taskById).filter(x=>x&&x.active!==false&&x.kind==='side');let dow=new Date(today()+'T12:00:00').getDay();let preferred=(dow===0||dow===6)?['learn','explore','money']:dow===1?['workout','career','learn']:dow===5?['workout','money','explore']:['workout','learn','social'];let out=preferred.map(taskById).filter(x=>x&&list.some(y=>y.id===x.id));for(const item of list)if(out.length<2&&!out.some(x=>x.id===item.id))out.push(item);return out.slice(0,2)}
+function getMain(){let t=taskById(state.mainId);if(t&&t.active!==false&&t.kind==='main'&&missionGate(t).ready&&!(t.repeat==='once'&&taskCompleted(t)))return t;return activeTasks().find(x=>x.kind==='main'&&missionGate(x).ready&&!(x.repeat==='once'&&taskCompleted(x)))}
+function currentSides(){const list=activeTasks().filter(x=>x.kind==='side'&&missionGate(x).ready);const saved=state.sideChoice[today()];if(Array.isArray(saved))return saved.map(taskById).filter(x=>x&&x.active!==false&&x.kind==='side'&&missionGate(x).ready);let dow=new Date(today()+'T12:00:00').getDay();let preferred=(dow===0||dow===6)?['learn','explore','money']:dow===1?['workout','career','learn']:dow===5?['workout','money','explore']:['workout','learn','social'];let out=preferred.map(taskById).filter(x=>x&&list.some(y=>y.id===x.id));for(const item of list)if(out.length<2&&!out.some(x=>x.id===item.id))out.push(item);return out.slice(0,2)}
 function questCard(t,main=false){
- const complete=taskCompleted(t),p=progressFor(t),status=questStatus(t);
+ const complete=taskCompleted(t),p=progressFor(t),status=questStatus(t),gate=missionGate(t),percent=missionPercent(t);
  const story=taskStory(t),chapter=chapterFor(t),hasStage=!!story&&!!chapter;
  const count=missionCount(t),goal=missionGoal(t),pct=Math.round(missionRatio(t)*100);
  return `<article class="quest ${main?'mainquest':''} ${complete?'finished':''}" ${main?'id="quest-focus"':''}>
    <div class="quest-left"><div class="quest-icon" aria-hidden="true">${safe(t.icon||areaInfo(t.area)[2])}</div><div class="quest-copy">
    <span class="quest-badge">${main?'◆ MAIN QUEST':'◇ SIDE QUEST'}</span><h3>${safe(t.title)}</h3><p>${safe(t.detail||'完成一个实际可验证的行动。')}</p>
    <div class="meta"><span class="xp-pill">+${t.xp} XP · 🪙 ${coinsForTask(t)}</span><span class="tag status-${status}">${statusLabel(status)}</span><span class="muted-tag">${t.repeat==='weekly'?'每周':t.repeat==='daily'?'每日':'一次性'}</span></div>
-   ${hasStage?`<div class="quest-note">📖 ${safe(story.title)} · ${safe(chapter.title)} · ${count}/${goal}</div><div class="progress" role="progressbar" aria-label="章节累计完成次数" aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100"><span style="width:${pct}%"></span></div>`:''}
+   ${`<div class="mission-meter"><div class="mission-meter-head"><span>本期实际进度</span><strong>${percent}%</strong></div><div class="progress" role="progressbar" aria-label="任务实际进度" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${percent}"><span style="width:${percent}%"></span></div><p>${safe(gate.reason)}${t.dueDate&&gate.reason.indexOf(t.dueDate)<0?" · 🗓 "+safe(t.dueDate):""}</p></div>`}${hasStage?`<div class="quest-note">📖 ${safe(story.title)} · ${safe(chapter.title)} · ${count}/${goal}</div><div class="progress" role="progressbar" aria-label="章节累计完成次数" aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100"><span style="width:${pct}%"></span></div>`:''}
    ${p.note?`<div class="quest-note">✎ ${safe(p.note)}</div>`:''}
    </div></div>
-   <div class="quest-actions">${!complete?`<button class="btn ${status==='todo'?'btn-primary':'btn-ghost'}" data-action="adventure-begin" data-id="${safe(t.id)}">${status==='todo'?'▶ 开始':'✎ 更新进度'}</button>`:''}
-   <button class="btn ${complete?'btn-ghost':'btn-primary'}" data-action="complete" data-id="${safe(t.id)}">${complete?'↶ 撤销完成':'✓ 确认完成'}</button>
+   <div class="quest-actions">${!complete&&gate.ready?`<button class="btn btn-small btn-ghost" data-action="mission-advance" data-id="${safe(t.id)}">＋20%</button><button class="btn ${status==='todo'?'btn-primary':'btn-ghost'}" data-action="adventure-begin" data-id="${safe(t.id)}">${status==='todo'?'▶ 开始':'✎ 更新进度'}</button>`:!complete?'<span class="tag">🔒 待触发</span>':''}
+   <button class="btn ${complete?'btn-ghost':'btn-primary'}" data-action="complete" data-id="${safe(t.id)}" ${!complete&&!gate.ready?'disabled title="任务尚未触发"':''}>${complete?'↶ 撤销完成':'✓ 确认完成'}</button>
    <button class="btn btn-small btn-ghost" data-action="quest-detail" data-id="${safe(t.id)}" aria-label="查看${safe(t.title)}任务详情">···</button></div>
    </article>`;
 }
