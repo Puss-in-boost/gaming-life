@@ -1,0 +1,15 @@
+import assert from 'node:assert/strict';import vm from 'node:vm';import {readFileSync} from 'node:fs';
+const code=readFileSync('missions.js','utf8'),html=readFileSync('index.html','utf8');
+const sandbox={};vm.runInNewContext(code,sandbox);
+const m=sandbox.GamingLifeMissions;
+assert(m);assert.equal(m.parseDraft('明天开始复习','2026-10-28').triggerDate,'2026-10-29');
+assert.equal(m.parseDraft('10月31日前交付报告','2026-10-28').dueDate,'2026-10-31');
+assert.equal(m.parseDraft('每天跑步','2026-10-28').area,'health');
+const locked={id:'x',triggerDate:'2026-10-31'};assert.equal(m.activation(locked,[],[],'2026-10-28').ready,false);
+assert.equal(m.activation(locked,[],[],'2026-10-31').ready,true);
+assert.equal(m.activation({requiresTaskId:'a'},[{id:'a',title:'前置'}],[],'2026-10-28').ready,false);
+assert.equal(m.activation({requiresTaskId:'a'},[{id:'a',title:'前置'}],[{taskId:'a'}],'2026-10-28').ready,true);
+assert.equal(m.percent({}, {percent:40},false),40);assert.equal(m.percent({}, {percent:150},false),99);assert.equal(m.percent({},null,true),100);
+assert.match(html,/mission-radar-form/);assert.match(html,/mission-confirm/);assert.match(html,/mission-advance/);
+for(const j of [...html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/g)].map(x=>x[1].trim()).filter(Boolean))new vm.Script(j);
+console.log('V2 activation + progress + candidate parser PASS');

@@ -141,3 +141,10 @@ body{background:radial-gradient(ellipse 700px 500px at 85% -7%,#213d4b 0,transpa
 .character-sheet .domain,.domain-list .domain{grid-template-columns:120px minmax(0,1fr) 60px}
 .character-sheet .domain strong,.domain-list .domain strong{font-variant-numeric:tabular-nums;color:#f5d797;text-align:right}
 @media(max-width:580px){.character-sheet .domain,.domain-list .domain{grid-template-columns:102px minmax(0,1fr) 54px}}
+
+.mission-radar{padding:20px;margin:15px 0 24px;border:1px solid #648a82;background:linear-gradient(115deg,#1b3637,#1a2637);border-radius:20px}
+.mission-radar h2{margin:0 0 5px;font-size:19px;color:#f5d9a6}.mission-radar p{margin:0 0 12px}
+.radar-form{display:flex;gap:10px}.radar-form input{flex:1;min-width:0;border-radius:12px;background:#111e2b;color:#fff;border:1px solid #648079;padding:12px}
+.mission-waiting{margin-top:14px}.mission-waiting summary{cursor:pointer;color:#b9d9c7}
+.mission-meter{margin:11px 0 7px}.mission-meter-head{display:flex;justify-content:space-between;gap:8px;color:#d6dabf;font-size:12px;margin-bottom:6px}.mission-meter .progress{height:9px}.mission-meter>p{font-size:11px;margin:6px 0;color:#adbec5}
+@media(max-width:680px){.radar-form{flex-direction:column}.radar-form .btn{width:100%}}

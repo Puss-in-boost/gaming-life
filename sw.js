@@ -1,6 +1,6 @@
 // Cache only the public app shell. Personal records remain in browser storage.
-const CACHE = 'gaming-life-shell-v5';
-const SHELL = ['./', './index.html', './cloud.js', './adventure.css', './manifest.webmanifest'];
+const CACHE = 'gaming-life-shell-v6';
+const SHELL = ['./', './index.html', './cloud.js', './missions.js', './adventure.css', './manifest.webmanifest'];
 self.addEventListener('install', event => {
   event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(SHELL)));
   self.skipWaiting();
