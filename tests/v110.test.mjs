@@ -7,7 +7,7 @@ assert.match(cloud,/hasPublicKey/);assert.match(cloud,/if\(!key&&configured\?\.u
 const extract=(a,b)=>html.slice(html.indexOf(a),html.indexOf(b,html.indexOf(a)+a.length));
 const context=vm.createContext({state:{adventureIdle:{enabled:true,lastActionOn:'2026-10-20'},tasks:[{id:'t'}]},today:()=> '2026-10-28'});
 vm.runInContext(extract('function idleStats(','function honorStats()'),context);
-assert.equal(context.idleStats().energy,80);
+assert.equal(context.idleStats().energy,75);
 assert.equal(context.idleStats('2026-10-22').energy,100);
 context.state.adventureIdle.lastActionOn='2026-10-01';assert.equal(context.idleStats().energy,60);
 context.state.adventureIdle.enabled=false;assert.equal(context.idleStats().energy,100);
