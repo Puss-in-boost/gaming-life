@@ -1,0 +1,26 @@
+name: Gaming Life Supabase keepalive
+on:
+  schedule:
+    - cron: '17 2,14 * * *'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  health:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Read-only database request (secrets required)
+        env:
+          SUPABASE_URL: ${{ secrets.GAMING_LIFE_SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.GAMING_LIFE_SUPABASE_PUBLISHABLE_KEY }}
+        run: |
+          if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_KEY" ]; then
+            echo "::error::Configure GAMING_LIFE_SUPABASE_URL and GAMING_LIFE_SUPABASE_PUBLISHABLE_KEY in repository Actions secrets."
+            exit 1
+          fi
+          curl --fail-with-body --retry 2 --retry-delay 5 --max-time 25 --silent --show-error \
+            -H "apikey: $SUPABASE_KEY" \
+            -H "Authorization: Bearer $SUPABASE_KEY" \
+            "$SUPABASE_URL/rest/v1/?apikey=$SUPABASE_KEY" >/dev/null
+          echo "REST API reachable"

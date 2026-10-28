@@ -136,3 +136,8 @@ body{background:radial-gradient(ellipse 700px 500px at 85% -7%,#213d4b 0,transpa
   .bottomnav button{min-height:48px}
 }
 @media(prefers-reduced-motion:reduce){.quest:hover,.nav-button:hover{transform:none}}
+
+/* V1.10 fixed-domain growth scale */
+.character-sheet .domain,.domain-list .domain{grid-template-columns:120px minmax(0,1fr) 60px}
+.character-sheet .domain strong,.domain-list .domain strong{font-variant-numeric:tabular-nums;color:#f5d797;text-align:right}
+@media(max-width:580px){.character-sheet .domain,.domain-list .domain{grid-template-columns:102px minmax(0,1fr) 54px}}
