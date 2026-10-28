@@ -96,12 +96,12 @@
       return true;
     }).catch(e=>{note('error','本地保存失败：'+e.message);return false});
   }
-  function status(){return {...info,mode,hasCloudData,canEdit:canEdit(),configured:!!configured?.url,configUrl:configured?.url||'',signedIn:!!session?.access_token,remoteRevision:base?.revision??null}}
+  function status(){return {...info,mode,hasCloudData,canEdit:canEdit(),configured:!!(configured?.url&&configured?.key),hasPublicKey:!!configured?.key,configUrl:configured?.url||'',signedIn:!!session?.access_token,remoteRevision:base?.revision??null}}
   function credentials(email,password){
     if(!email||!String(email).includes('@')||!password||String(password).length<6)throw new Error('请输入正确邮箱及至少6位的密码');
   }
   async function configure(url,key){
-    url=String(url||'').trim().replace(/\/+$/,'');key=String(key||'').trim();
+    url=String(url||'').trim().replace(/\/+$/,'');key=String(key||'').trim();if(!key&&configured?.url===url)key=configured.key;
     if(!/^https:\/\/[^\s/]+(?:\/)?$/.test(url))throw new Error('请填写 HTTPS 的 Supabase Project URL');
     if(!key||key.startsWith('sb_secret_')||key.length<20)throw new Error('请填写 Supabase publishable/anon key，不要填写 secret/service_role key');
     if(key.split('.').length===3){try{const jwt=JSON.parse(atob(key.split('.')[1].replace(/-/g,'+').replace(/_/g,'/')));if(jwt.role==='service_role')throw new Error('禁止在网页配置 service_role 密钥')}catch(e){if(e.message?.includes('service_role'))throw e}}
