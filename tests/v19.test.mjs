@@ -18,7 +18,7 @@ assert.match(css,/\.home-hero/);
 assert.match(css,/\.adventure-quick/);
 assert.match(css,/@media\(prefers-reduced-motion:reduce\)/);
 assert.match(sw,/adventure\.css/);
-assert.match(sw,/gaming-life-shell-v5/);
+assert.match(sw,/gaming-life-shell-v6/);
 assert.match(html,/const DEFAULT_TASKS=\[\]/);
 assert.doesNotMatch(html,/const PERSONAL_STARTER_PACK/);
 const scripts=[...html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/g)].map(m=>m[1].trim()).filter(Boolean);
@@ -45,7 +45,7 @@ const ctx=vm.createContext({
  statusLabel:s=>({todo:'未开始',doing:'进行中',review:'待确认',done:'已完成'})[s],
  taskStory:()=>null, chapterFor:()=>null, missionCount:()=>0, missionGoal:()=>1,missionRatio:()=>0,
  coinsForTask:t=>t.coins??10,areaInfo:()=>[null,null,'📚'],
- idleStats:()=>({energy:100}),levelInfo:()=>({level:1,earned:25,need:100,pct:25}),
+ idleStats:()=>({energy:100}),missionGate:()=>({ready:true,reason:'⚡ 随时可开始'}),missionPercent:t=>events.some(e=>e.taskId===t.id)?100:0,levelInfo:()=>({level:1,earned:25,need:100,pct:25}),
  totalXP:()=>25,coinBalance:()=>12,safe:x=>String(x),rewardTeaser:()=>'<div class="reward-teaser">奖励</div>'
 });
 vm.runInContext(extract('function dailyTrail()','function getMain()'),ctx);
