@@ -185,7 +185,7 @@ function migrate(v){
  return next;
 }
 function load(){try{const v=JSON.parse(localStorage.getItem(KEY));if(v&&v.version===1&&Array.isArray(v.tasks)&&Array.isArray(v.events)&&Array.isArray(v.notes))return migrate(v);}catch(e){}return DEFAULT()}
-let state=load(),screen='today',modal='',toastTimer=null,pendingText='',pendingIds=[],validatedPack=null,rewardTimer=null,progressTaskId=null,missionDraft=null;
+let state=load(),screen='today',modal='',toastTimer=null,pendingText='',pendingIds=[],validatedPack=null,rewardTimer=null,progressTaskId=null,missionDraft=null,inboundProposalText='';
 const MISSION=window.GamingLifeMissions;
 let lastDate='';
 const el=(id)=>document.getElementById(id);
@@ -543,7 +543,7 @@ function inboxView(){
  const pending=inboxPending();
  return `<section class="mission-radar"><h2>📥 私人任务申请箱 · ${pending.length} 条待审</h2><p class="hint">粘贴 ChatGPT 整理的多条任务或进度建议，逐项批准。不会自动读其他对话，不会提前发 XP，数据只进私人存档。</p>
  ${pending.map(p=>`<div class="activity"><div class="activity-main"><strong>${p.type==='progress'?'✎ 进度 · '+safe(p.taskTitle):'◇ 任务 · '+safe(p.title)}</strong><small>${p.type==='progress'?p.percent+'% · '+safe(p.note):safe(p.detail||areaInfo(p.area)[1])}</small></div><div class="data-actions"><button class="btn btn-small btn-primary" data-action="inbox-approve" data-id="${safe(p.id)}">批准</button><button class="btn btn-small btn-ghost" data-action="inbox-reject" data-id="${safe(p.id)}">忽略</button></div></div>`).join('')}
- <details ${pending.length||!activeTasks().length?'open':''}><summary>＋ 批量导入任务 / 进度建议</summary><form id="private-inbox-form"><div class="field"><label for="inbox-text">逐行任务或 gaming-life.proposals JSON（最多16条）</label><textarea id="inbox-text" name="proposals" class="pack-textarea" rows="4" maxlength="24000" required placeholder="明天开始核对报告&#10;周末去体验一次新运动"></textarea></div><div class="data-actions"><button class="btn btn-primary" type="submit">放入待审箱</button><button class="btn" type="button" data-action="copy-inbox-prompt">复制 ChatGPT 整理指令</button></div></form></details></section>`;
+ <details ${pending.length||!activeTasks().length||inboundProposalText?'open':''}><summary>＋ 批量导入任务 / 进度建议</summary>${inboundProposalText?'<p class="hint">🔗 点击提交后进入待审箱，还需逐项批准。</p>':''}<form id="private-inbox-form"><div class="field"><label for="inbox-text">逐行任务或 gaming-life.proposals JSON（最多16条）</label><textarea id="inbox-text" name="proposals" class="pack-textarea" rows="4" maxlength="24000" required placeholder="明天开始核对报告&#10;周末去体验一次新运动">${safe(inboundProposalText)}</textarea></div><div class="data-actions"><button class="btn btn-primary" type="submit">放入待审箱</button><button class="btn" type="button" data-action="copy-inbox-prompt">复制 ChatGPT 整理指令</button></div></form></details></section>`;
 }
 function reentryView(){
  if(!activeTasks().length)return '';
@@ -651,16 +651,19 @@ function submitHandler(e){
   if(window.GamingLifeCloud?.status().mode==='cloud'&&!window.GamingLifeCloud.status().canEdit)return notify('云端尚未同步，暂不能提交');
   try{
    const items=MISSION.parseInbox(new FormData(e.target).get('proposals'),today(),state.tasks);
-   state.proposalInbox??=[];const keys=new Set(inboxPending().map(inboxKey));let added=0,skipped=0;
-   for(const item of items){
-    const key=inboxKey(item);
-    if(keys.has(key)||(item.type==='task'&&activeTasks().some(t=>MISSION.dedupeKey(t.title)===MISSION.dedupeKey(item.title)))){skipped++;continue}
-    if(inboxPending().length>=30)throw Error('待审候选最多30条，请先审核');
-    state.proposalInbox.push({...item,id:uid(),status:'pending',proposedAt:new Date().toISOString()});keys.add(key);added++;
-   }
-   state.proposalInbox=[...inboxPending(),...state.proposalInbox.filter(p=>p.status!=='pending').slice(-40)];
-   if(added){if(save()){render();notify('已放入 '+added+' 条待审建议'+(skipped?'；忽略重复 '+skipped+' 条':'')+'，未自动发布任务')}}else notify('没有新增候选；相同任务已跳过');
-  }catch(err){notify(err.message||'导入失败')}
+    const existing=Array.isArray(state.proposalInbox)?state.proposalInbox:[];
+    const keys=new Set(inboxPending().map(inboxKey)),fresh=[];let skipped=0;
+    for(const item of items){
+      const key=inboxKey(item);
+      if(keys.has(key)||(item.type==='task'&&activeTasks().some(t=>MISSION.dedupeKey(t.title)===MISSION.dedupeKey(item.title)))){skipped++;continue}
+      keys.add(key);fresh.push({...item,id:uid(),status:'pending',proposedAt:new Date().toISOString()});
+    }
+    if(inboxPending().length+fresh.length>30)throw Error('待审上限30条：请先审核，不会部分导入');
+    if(fresh.length){
+      state.proposalInbox=[...inboxPending(),...fresh,...existing.filter(p=>p.status!=='pending').slice(-40)];
+      if(save()){inboundProposalText='';render();notify('已放入 '+fresh.length+' 条待审建议'+(skipped?'；忽略重复 '+skipped+' 条':'')+'，未自动发布任务')}
+    }else notify('没有新增候选；相同任务已跳过');
+   }catch(err){notify(err.message||'导入失败')}
   return;
  }
 
@@ -717,17 +720,21 @@ function clickHandler(e){const btn=e.target.closest('button[data-action]');if(!b
   if(action==='inbox-reject'){p.status='rejected';p.reviewedAt=new Date().toISOString();if(save()){render();notify('已忽略，任务与奖励保持不变')}return}
   if(p.type==='task'){
    if(activeTasks().some(t=>MISSION.dedupeKey(t.title)===MISSION.dedupeKey(p.title)))return notify('已经有同名任务，请忽略这条重复申请');
-   const at=new Date().toISOString(),t={id:uid(),title:p.title,detail:p.detail||'完成一项真实可验证的行动',kind:p.kind,area:p.area,repeat:p.repeat,xp:p.kind==='main'?40:15,coins:p.kind==='main'?20:8,icon:areaInfo(p.area)[2],active:true,triggerDate:p.triggerDate,dueDate:p.dueDate,storylineId:null,chapterId:null,targetCount:1,strictDaily:false,sourceLabel:'私人候选箱 · 审核通过',publishedAt:at,updatedAt:at};
+   const hadMain=!!getMain(),at=new Date().toISOString(),t={id:uid(),title:p.title,detail:p.detail||'完成一项真实可验证的行动',kind:p.kind,area:p.area,repeat:p.repeat,xp:p.kind==='main'?40:15,coins:p.kind==='main'?20:8,icon:areaInfo(p.area)[2],active:true,triggerDate:p.triggerDate,dueDate:p.dueDate,storylineId:null,chapterId:null,targetCount:1,strictDaily:false,sourceLabel:'私人候选箱 · 审核通过',publishedAt:at,updatedAt:at};
    state.tasks.push(t);p.status='approved';p.reviewedAt=at;p.createdTaskId=t.id;
-   if(t.kind==='main'&&!getMain())state.mainId=t.id;
+   if(t.kind==='main'&&!hadMain)state.mainId=t.id;
    if(save()){render();notify('任务已加入私人存档，从0%开始，不提前发放奖励')}return;
   }
   if(p.type==='progress'){
    const t=taskById(p.taskId);
    if(!t||t.active===false||taskCompleted(t)||!missionGate(t).ready)return notify('目标任务不可更新，请检查任务状态');
+   if(!Number.isInteger(p.percent)||p.percent<0||p.percent>99||typeof p.note!=='string'||!p.note.trim())return notify('候选进度无效，请忽略重新提交');
    if(p.percent<missionPercent(t))return notify('建议进度低于当前记录，请忽略或重新提交');
+   const oldStatus=p.status,oldAt=p.reviewedAt;
    p.status='approved';p.reviewedAt=new Date().toISOString();
-   if(saveProgress(t,'doing',p.note,p.percent)){render();notify('已记录实际推进，不会自动确认完成或发放奖励')}return;
+   if(saveProgress(t,'doing',p.note,p.percent)){render();notify('已记录实际推进，不会自动确认完成或发放奖励')}
+   else{p.status=oldStatus;p.reviewedAt=oldAt}
+   return;
   }
   return;
  }
@@ -826,6 +833,18 @@ function clickHandler(e){const btn=e.target.closest('button[data-action]');if(!b
 if(['complete','toggle-active','milestone','redeem','reward-used','reward-cancel','capture','reset','set-main','focus-main','confirm-pack'].includes(action)&&window.GamingLifeCloud?.status().mode==='cloud'&&!window.GamingLifeCloud.status().canEdit){notify('云端正在保存或当前离线，暂不可修改任务');return}
 if(action==='close'){modal='';validatedPack=null;render();return}if(action==='open-pack'){validatedPack=null;modal='pack';render();return}if(action==='confirm-pack'){if(validatedPack)importPack(validatedPack);return}if(action==='copy-snapshot'){copySnapshot();return}if(action==='open-reward-create'){modal='reward-create';render();return}if(action==='redeem'){redeemReward(id);return}if(action==='reward-used'){markRewardUsed(id);return}if(action==='reward-cancel'){cancelRedemption(id);return}if(action==='open-create'){modal='create';render();return}if(action==='choose-sides'){modal='sides';render();return}if(action==='choose-main'){modal='main';render();return}if(action==='open-progress'){const t=taskById(id);if(!t||taskCompleted(t)||!missionGate(t).ready)return;progressTaskId=id;modal='progress';render();return}if(action==='set-main'||action==='focus-main'){focusMain(id);return}if(action==='complete'){let t=taskById(id);if(t)completion(t);return}if(action==='toggle-active'){let t=taskById(id);if(!t)return;t.active=t.active===false;save();render();return}if(action==='milestone'){let m=MILESTONES.find(x=>x.id===id);if(!m)return;if(state.milestones[id]){if(coinsEarned()-(Number(state.milestones[id].coins)||0)<coinsSpent())return notify('这笔冒险币已用于兑换奖励，不能直接撤销 BOSS 记录');if(!confirm('撤销这项里程碑的完成记录？'))return;delete state.milestones[id];notify('已撤销里程碑')}else{if(!confirm(`确认已实际达成「${m.title}」？这会奖励 ${m.xp} XP。`))return;state.milestones[id]={at:new Date().toISOString(),date:today(),xp:m.xp,coins:Math.min(100,Math.round(m.xp/2))};touchMeaningfulAction();notify(`BOSS 通关！+${m.xp} XP · 🪙 +${state.milestones[id].coins}`)}save();render();return}if(action==='capture'){let raw=el('quick-input')?.value.trim();if(!raw){notify('先写一句今天完成的事情');return}pendingText=raw;pendingIds=matchText(raw);modal='capture';render();return}if(action==='export'){downloadBackup();return}if(action==='reset'){if(window.GamingLifeCloud?.status().mode==='cloud'){notify('云端模式已禁止直接清空：请切回本地优先，并确认云端同步后再决定是否重置');return}if(prompt('此操作会永久清空当前浏览器的记录。请输入「清空」以继续：')!=='清空')return;state=DEFAULT();save();navigate('today');notify('本地进度已重置')}}
 document.addEventListener('input',e=>{if(e.target?.id==='pack-json'&&validatedPack){validatedPack=null;const b=el('modal-root')?.querySelector('[data-action="confirm-pack"]');if(b)b.remove();const prev=el('modal-root')?.querySelector('.pack-preview');if(prev)prev.remove();}});document.addEventListener('click',clickHandler);document.addEventListener('submit',submitHandler);document.addEventListener('change',inputHandler);document.addEventListener('keydown',e=>{if(e.key==='Escape'&&modal){modal='';render()}if(e.key==='Enter'&&e.target?.id==='quick-input'){e.preventDefault();el('app')?.querySelector('[data-action="capture"]')?.click()}});document.addEventListener('visibilitychange',()=>{if(!document.hidden&&today()!==lastDate)render()});window.addEventListener('focus',()=>{if(today()!==lastDate)render()});
+function intakeProposalLink(){
+ const hash=String(window.location.hash||'');
+ if(!hash.startsWith('#inbox='))return;
+ try{
+  const raw=new URLSearchParams(hash.slice(1)).get('inbox')||'';
+  if(raw.length>24000)throw Error('候选链接太长，请改用批量粘贴');
+  const doc=JSON.parse(raw);
+  if(doc?.format!=='gaming-life.proposals'||doc.version!==1||!Array.isArray(doc.proposals)||!doc.proposals.length||doc.proposals.length>16)throw Error('候选链接格式错误');
+  inboundProposalText=raw;screen='today';
+ }catch(err){console.warn('Invalid Gaming Life inbox link ignored',err)}
+ finally{window.history.replaceState(null,'',window.location.pathname+window.location.search)}
+}
 async function startGame(){
  const cloud=window.GamingLifeCloud;
  if(cloud){
@@ -837,6 +856,7 @@ async function startGame(){
    if(cloud.status().mode!=='cloud')save(true);
   }catch(e){console.warn('Gaming Life local boot fallback',e)}
  }
+ intakeProposalLink();
  render();
 }
 startGame();
