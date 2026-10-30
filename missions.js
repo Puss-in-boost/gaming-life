@@ -68,5 +68,47 @@
   return Number.isFinite(n)?Math.max(0,Math.min(99,Math.round(n))):0;
  }
  function dedupeKey(s){return String(s||'').replace(/[\s，。,.!?！？:：;；\-]/g,'').toLowerCase()}
- root.GamingLifeMissions={offset,targetDay,parseDraft,activation,percent,dedupeKey};
+
+ // A private, manually pasted inbox. This parser never reaches ChatGPT or any external API.
+ const VALID_AREAS=['career','learning','finance','social','health','explore'];
+ function parseInbox(raw,day,tasks=[]){
+  const value=String(raw||'').trim();
+  if(!value||value.length>24000)throw Error('请粘贴1–16条建议，文本不能超过24KB');
+  let source;
+  if(value.startsWith('{')){
+   let doc;try{doc=JSON.parse(value)}catch(e){throw Error('建议 JSON 格式不正确')}
+   if(!doc||doc.format!=='gaming-life.proposals'||doc.version!==1||!Array.isArray(doc.proposals))throw Error('请使用 gaming-life.proposals v1 格式');
+   source=doc.proposals;
+  }else{
+   source=value.split(/\r?\n/).map(x=>x.replace(/^\s*(?:[-*]|\d+[.)、])\s*/, '').trim()).filter(Boolean).map(x=>{
+    const parsed=parseDraft(x,day);
+    return {type:'task',...parsed};
+   });
+  }
+  if(!source.length||source.length>16)throw Error('每次只能审核1–16条建议');
+  return source.map((p,i)=>{
+   if(!p||typeof p!=='object'||Array.isArray(p))throw Error('第'+(i+1)+'条建议格式不正确');
+   if(p.type==='progress'){
+    const label=String(p.taskTitle||'').trim(),id=String(p.taskId||'').trim();
+    if(!label&&!id)throw Error('进度建议必须指定任务标题或任务ID');
+    const matches=tasks.filter(t=>t.active!==false&&(id?t.id===id:dedupeKey(t.title)===dedupeKey(label)));
+    if(matches.length!==1)throw Error('进度建议未能唯一匹配现有任务：'+(label||id).slice(0,65));
+    if(!Number.isInteger(p.percent)||p.percent<0||p.percent>99)throw Error('进度只能是0–99%；真实完成请在游戏内单独确认');
+    if(typeof p.note!=='string'||!p.note.trim()||p.note.length>240)throw Error('进度建议必须提供不超过240字的真实推进记录');
+    return {type:'progress',taskId:matches[0].id,taskTitle:matches[0].title,percent:p.percent,note:p.note.trim()};
+   }
+   if(p.type!=='task')throw Error('仅支持 task 或 progress 类型');
+   const title=String(p.title||'').trim();
+   if(!title||title.length>65)throw Error('第'+(i+1)+'项任务名称应为1–65字');
+   const detail=String(p.detail||'').trim();
+   if(detail.length>250)throw Error('任务说明最长250字');
+   const kind=p.kind??'side',repeat=p.repeat??'once',area=p.area??parseDraft(title,day).area;
+   if(!['main','side'].includes(kind)||!['once','daily','weekly'].includes(repeat)||!VALID_AREAS.includes(area))throw Error('任务类型、周期或成长方向不合法');
+   for(const date of [p.triggerDate,p.dueDate]){
+    if(date!==undefined&&date!==null&&(!/^\d{4}-\d{2}-\d{2}$/.test(date)||Number.isNaN(new Date(date+'T12:00:00').getTime())||iso(new Date(date+'T12:00:00'))!==date))throw Error('触发或截止日期必须为有效的 YYYY-MM-DD');
+   }
+   return {type:'task',title,detail,kind,repeat,area,triggerDate:p.triggerDate||null,dueDate:p.dueDate||null};
+  });
+ }
+ root.GamingLifeMissions={offset,targetDay,parseDraft,parseInbox,activation,percent,dedupeKey};
 })(typeof window==='undefined'?globalThis:window);
