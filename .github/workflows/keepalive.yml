@@ -1,7 +1,7 @@
-name: Gaming Life Supabase keepalive
+name: Gaming Life Supabase keepalive (manual validation only)
+# Automatic runs are intentionally disabled until the heartbeat table and Actions
+# secrets have been configured and a manual run has passed. See docs/V21_PRIVATE_INBOX.md.
 on:
-  schedule:
-    - cron: '17 2,14 * * *'
   workflow_dispatch:
 permissions:
   contents: read

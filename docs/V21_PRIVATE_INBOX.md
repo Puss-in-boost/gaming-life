@@ -24,6 +24,9 @@ progress 的目标必须已经存在并能按完整标题或ID唯一匹配；0�
 ## 数据库保活（可选，独立于候选箱）
 旧工作流只探测 REST 根路径；该路径返回成功不足以证明 Postgres 真正被访问。新版查询一个只有固定 id=1 的非个人记录，并检查返回内容。它需要**先手动审核并执行** `supabase/003_keepalive.sql`；不要在没有该表时启动调度。
 
+**当前实际状态（2026-10-30）：** Supabase 项目仍是 `ACTIVE_HEALTHY`，但检查发现 `public.gaming_life_keepalive` 尚未创建。为防止未配置流程定时失败并发送邮件，GitHub Actions 的 `schedule` 已从工作流中移除，暂时仅保留 `workflow_dispatch` 手动验证。**当前不具备自动保活能力**；完成 SQL 审核、配置两个 Actions Secrets、确认手动运行成功后，才应在新 PR 中恢复定时触发。此修复不会执行数据库操作、删除存档或影响游戏页面。
+
+
 到仓库 Settings → Secrets and variables → Actions 设置：
 - `GAMING_LIFE_SUPABASE_URL`：项目 URL
 - `GAMING_LIFE_SUPABASE_PUBLISHABLE_KEY`：publishable / anon key，**绝不能用 service_role 或 secret**
