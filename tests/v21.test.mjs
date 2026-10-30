@@ -20,7 +20,7 @@ assert.equal(out[1].taskId,'abc');
 assert.equal(out[1].percent,40);
 assert.throws(()=>m.parseInbox(JSON.stringify({format:'gaming-life.proposals',version:1,proposals:[{type:'progress',taskTitle:'检查冷站模型',percent:100,note:'完成'}]}),'2026-10-30',one),/0–99/);
 assert.throws(()=>m.parseInbox(JSON.stringify({format:'gaming-life.proposals',version:1,proposals:[{type:'progress',taskTitle:'不存在',percent:10,note:'未匹配'}]}),'2026-10-30',one),/唯一匹配/);
-assert.throws(()=>m.parseInbox('\n'.repeat(17)+'18','2026-10-30',[]),/任务名称|条建议/);
+assert.throws(()=>m.parseInbox(Array.from({length:17},(_,i)=>'任务'+i).join('\n'),'2026-10-30',[]),/任务名称|条建议/);
 assert.match(html,/proposalInbox/);
 assert.match(html,/private-inbox-form/);
 assert.match(html,/inbox-approve/);
