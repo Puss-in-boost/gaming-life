@@ -117,7 +117,7 @@ const STORY_PRESETS=[];
 const LEGACY_STORY_STEPS={};
 
 function localDay(d=new Date()){return [d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-')}
-const DEFAULT=()=>({version:1,adventureIdle:{enabled:true,lastActionOn:localDay()},createdAt:new Date().toISOString(),tasks:structuredClone(DEFAULT_TASKS),privatePacks:[],privatePacksVersion:1,storylines:structuredClone(STORY_PRESETS),storylineWins:{},excusedDays:{},events:[],notes:[],milestones:{},modes:{},sideChoice:{},mainId:null,secondaryMainId:null,questProgress:{},progressHistory:[],rewards:structuredClone(DEFAULT_REWARDS),redemptions:[],legacyCoinCredit:0,rewardEconomyVersion:2,monthlyRewardBudgetRmb:30,equippedTitle:''});
+const DEFAULT=()=>({version:1,adventureIdle:{enabled:true,lastActionOn:localDay()},createdAt:new Date().toISOString(),tasks:structuredClone(DEFAULT_TASKS),privatePacks:[],privatePacksVersion:1,proposalInbox:[],storylines:structuredClone(STORY_PRESETS),storylineWins:{},excusedDays:{},events:[],notes:[],milestones:{},modes:{},sideChoice:{},mainId:null,secondaryMainId:null,questProgress:{},progressHistory:[],rewards:structuredClone(DEFAULT_REWARDS),redemptions:[],legacyCoinCredit:0,rewardEconomyVersion:2,monthlyRewardBudgetRmb:30,equippedTitle:''});
 
 function recoverPrivatePacks(old){
  // Only convert previously user-confirmed imported packs; never invent progress or publish dates.
@@ -151,6 +151,7 @@ function migrate(v){
  base.storylines=Array.isArray(v.storylines)?v.storylines:structuredClone(STORY_PRESETS);
  base.privatePacks=v.privatePacksVersion===1&&Array.isArray(v.privatePacks)?v.privatePacks:recoverPrivatePacks(v);
  base.privatePacksVersion=1;
+ base.proposalInbox=Array.isArray(v.proposalInbox)?v.proposalInbox.filter(x=>x&&['pending','approved','rejected'].includes(x.status)).slice(-100):[];
  base.storylineWins=v.storylineWins&&typeof v.storylineWins==='object'&&!Array.isArray(v.storylineWins)?v.storylineWins:{};
  base.excusedDays=v.excusedDays&&typeof v.excusedDays==='object'&&!Array.isArray(v.excusedDays)?v.excusedDays:{};
  // On migration the new inactivity system starts today; no retroactive penalties.
@@ -535,6 +536,27 @@ function questCard(t,main=false){
    <button class="btn btn-small btn-ghost" data-action="quest-detail" data-id="${safe(t.id)}" aria-label="查看${safe(t.title)}任务详情">···</button></div>
    </article>`;
 }
+
+function inboxPending(){return (state.proposalInbox||[]).filter(p=>p.status==='pending')}
+function inboxKey(p){return p.type==='progress'?'p:'+p.taskId+':'+p.percent+':'+MISSION.dedupeKey(p.note):'t:'+MISSION.dedupeKey(p.title)}
+function inboxView(){
+ const pending=inboxPending();
+ return `<section class="mission-radar"><h2>📥 私人任务申请箱 · ${pending.length} 条待审</h2><p class="hint">粘贴 ChatGPT 整理的多条任务或进度建议，逐项批准。不会自动读其他对话，不会提前发 XP，数据只进私人存档。</p>
+ ${pending.map(p=>`<div class="activity"><div class="activity-main"><strong>${p.type==='progress'?'✎ 进度 · '+safe(p.taskTitle):'◇ 任务 · '+safe(p.title)}</strong><small>${p.type==='progress'?p.percent+'% · '+safe(p.note):safe(p.detail||areaInfo(p.area)[1])}</small></div><div class="data-actions"><button class="btn btn-small btn-primary" data-action="inbox-approve" data-id="${safe(p.id)}">批准</button><button class="btn btn-small btn-ghost" data-action="inbox-reject" data-id="${safe(p.id)}">忽略</button></div></div>`).join('')}
+ <details ${pending.length||!activeTasks().length?'open':''}><summary>＋ 批量导入任务 / 进度建议</summary><form id="private-inbox-form"><div class="field"><label for="inbox-text">逐行任务或 gaming-life.proposals JSON（最多16条）</label><textarea id="inbox-text" name="proposals" class="pack-textarea" rows="4" maxlength="24000" required placeholder="明天开始核对报告&#10;周末去体验一次新运动"></textarea></div><div class="data-actions"><button class="btn btn-primary" type="submit">放入待审箱</button><button class="btn" type="button" data-action="copy-inbox-prompt">复制 ChatGPT 整理指令</button></div></form></details></section>`;
+}
+function reentryView(){
+ if(!activeTasks().length)return '';
+ const dates=[state.createdAt,...(state.events||[]).map(x=>x.at||x.date),...(state.notes||[]).map(x=>x.at||x.date),...(state.progressHistory||[]).map(x=>x.at||x.date)].filter(Boolean).map(x=>new Date(x).getTime()).filter(Number.isFinite);
+ const days=Math.floor((new Date(today()+'T12:00:00').getTime()-(dates.length?Math.max(...dates):Date.now()))/86400000);
+ if(days<7)return '';
+ return `<section class="mission-radar"><strong>🌱 欢迎回来</strong><p class="hint">隔了 ${days} 天没打开也不需要补签。过去的记录、经验和金币都保留着。今天只推进一件事就好。</p></section>`;
+}
+async function copyInboxPrompt(){
+ const prompt='请根据我们这段对话中的真实任务和进展，生成Gaming Life 私人候选箱 JSON，仅输出JSON：{"format":"gaming-life.proposals","version":1,"proposals":[{"type":"task","title":"一项现实任务","detail":"完成标准","kind":"side","area":"career","repeat":"once"},{"type":"progress","taskTitle":"现有任务准确名称","percent":30,"note":"真实推进事实"}]}。kind 为 main/side，area 为 career/learning/finance/social/health/explore，repeat 为 once/daily/weekly；progress 只能是0–99。不要猜测或虚构完成结果，最多16项。';
+ try{await navigator.clipboard.writeText(prompt);notify('整理指令已复制。粘贴给 ChatGPT 后把生成的 JSON 贴回来')}catch(e){notify('复制失败，可让 ChatGPT 输出 gaming-life.proposals v1 JSON')}
+}
+
 function missionRadar(){
  const waiting=activeTasks().filter(t=>!taskCompleted(t)&&!missionGate(t).ready).slice(0,5);
  return `<section class="mission-radar"><h2>📡 任务雷达</h2><p class="hint">用一句话生成任务候选；本地规则，不会读取 ChatGPT 对话。</p><form id="mission-radar-form" class="radar-form"><input name="message" maxlength="160" required placeholder="例如：明天开始复习；周五前完成报告"><button class="btn btn-primary" type="submit">生成候选</button></form>${waiting.length?`<details><summary>⏳ 待触发任务（${waiting.length}）</summary>${waiting.map(t=>`<div class="activity"><div class="activity-main"><strong>${safe(t.title)}</strong><small>${safe(missionGate(t).reason)}</small></div></div>`).join('')}</details>`:''}</section>`;
@@ -544,7 +566,9 @@ function todayView(){
  const story=main&&taskStory(main);
  return `<div class="home-topline"><div class="eyebrow">✧ ADVENTURE CAMP · 冒险者营地</div><span class="chip">${humanDate(date)}</span></div>
   ${hero()}
-  ${missionRadar()}
+  ${reentryView()}
+  ${inboxView()}
+  <details class="adventure-tools"><summary>📡 单条任务雷达（可选）</summary>${missionRadar()}</details>
   ${main?`<div class="adventure-section-head"><div><span class="mission-kicker">01 / THE MAIN STORY</span><h2>⚔️ 当前主线</h2><p>先从这一项开始，不必同时完成所有任务。</p></div><button class="btn btn-small btn-ghost" data-action="choose-main">切换目标</button></div>${questCard(main,true)}`:
    `<section class="adventure-quick"><span class="mission-kicker">01 / CREATE YOUR FIRST QUEST</span><h2>给自己发布一个小任务</h2><p>只写任务名即可。默认一次性主线，真实完成后才领取经验和金币。</p><form id="adventure-quick-form"><input name="title" required maxlength="65" autocomplete="off" aria-label="第一项冒险任务名称" placeholder="例如：完成一件15分钟能推进的小事"><button type="submit" class="btn btn-primary">发布任务 →</button></form><p class="hint">也可以 <button type="button" class="small-link" data-action="open-pack">导入已有私人任务包</button>，不会发布到 GitHub。</p></section>`}
   ${back&&main&&back.id!==main.id?`<details class="parallel-mission"><summary>🔀 备用主线：${safe(back.title)}</summary><div class="data-actions" style="margin-top:12px"><button class="btn btn-small" data-action="focus-main" data-id="${safe(back.id)}">设为今日焦点</button></div>${questCard(back,true)}</details>`:''}
