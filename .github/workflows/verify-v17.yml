@@ -25,4 +25,4 @@ jobs:
         with:
           node-version: '22'
       - name: Verify all application regressions
-        run: node tests/v17.test.mjs && node tests/v18.test.mjs && node tests/v19.test.mjs && node tests/v110.test.mjs && node tests/v2.test.mjs
+        run: node tests/v17.test.mjs && node tests/v18.test.mjs && node tests/v19.test.mjs && node tests/v110.test.mjs && node tests/v2.test.mjs && node tests/v21.test.mjs

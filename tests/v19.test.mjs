@@ -35,7 +35,7 @@ const quests=[],events=[],state={
  storylines:[],milestones:{},redemptions:[],rewards:[],questProgress:{}
 };
 const ctx=vm.createContext({
- state, activeTasks:()=>quests, getMain:()=>quests.find(t=>t.kind==='main'&&!events.some(e=>e.taskId===t.id&&t.repeat==='once'))||null,
+ state, inboundProposalText:'', MISSION:{dedupeKey:s=>s}, activeTasks:()=>quests, getMain:()=>quests.find(t=>t.kind==='main'&&!events.some(e=>e.taskId===t.id&&t.repeat==='once'))||null,
  currentSides:()=>quests.filter(t=>t.kind==='side').slice(0,2),
  secondaryMain:()=>null, dailyEvents:()=>events.filter(e=>e.date==='2026-10-27'),
  today:()=> '2026-10-27',dateOffset:d=>'2026-10-'+String(27+d).padStart(2,'0'),

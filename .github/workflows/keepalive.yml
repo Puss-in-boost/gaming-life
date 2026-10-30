@@ -22,5 +22,6 @@ jobs:
           curl --fail-with-body --retry 2 --retry-delay 5 --max-time 25 --silent --show-error \
             -H "apikey: $SUPABASE_KEY" \
             -H "Authorization: Bearer $SUPABASE_KEY" \
-            "$SUPABASE_URL/rest/v1/?apikey=$SUPABASE_KEY" >/dev/null
-          echo "REST API reachable"
+            "$SUPABASE_URL/rest/v1/gaming_life_keepalive?select=id&id=eq.1" > /tmp/gaming-life-heartbeat.json
+          grep -Eq '"id"[[:space:]]*:[[:space:]]*1' /tmp/gaming-life-heartbeat.json || { echo "::error::Database row not verified"; exit 1; }
+          echo "Database row read OK"
